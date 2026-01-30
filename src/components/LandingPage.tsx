@@ -24,10 +24,9 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
         <header className="text-center mb-16 animate-fade-in">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Wand2 className="w-12 h-12 text-purple-500" />
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 bg-clip-text text-transparent pb-1 leading-tight">
               MagicNarrate
             </h1>
-            <Sparkles className="w-12 h-12 text-yellow-400" />
           </div>
           <p className="text-2xl text-gray-700 font-medium">
             Bring your stories to life with AI-powered imagination

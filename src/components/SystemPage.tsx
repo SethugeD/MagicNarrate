@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Home, ImagePlus, Type, Wand2, Headphones, Sparkles, Play, Pause, Volume2, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
-import AICharacter from './AICharacter';
+import { Home, ImagePlus, Type, Wand2, Sparkles, Play, Pause, Volume2, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
 
 interface SystemPageProps {
   onBackToHome: () => void;
@@ -22,7 +21,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [audioSrc, setAudioSrc] = useState<string>('');
   const [caption, setCaption] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -439,8 +437,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           </div>
         </div>
       </div>
-
-      <AICharacter />
     </div>
   );
 }
