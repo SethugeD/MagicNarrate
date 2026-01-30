@@ -81,7 +81,3 @@ Contact the repository owner for access to these files.
 - `POST /generate` - Generate story from image
 - `POST /generate-from-text` - Generate story from text prompt
 - `GET /speakers` - Get available TTS voices
-
-## License
-
-MIT
