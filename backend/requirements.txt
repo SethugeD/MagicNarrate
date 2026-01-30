@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+torch
+torchvision
+transformers
+pillow
+google-genai
+parler-tts
+soundfile
+numpy
+python-dotenv
