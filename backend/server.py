@@ -63,7 +63,7 @@ except Exception as e:
     word2idx, idx2word = {}, {}
     vocab_size = 0
 
-# 2. Load ResNet for feature extraction (matches your Colab)
+# 2. Load ResNet for feature extraction 
 print("Loading ResNet50 feature extractor...")
 resnet = get_resnet_extractor().to(DEVICE)
 
@@ -86,7 +86,7 @@ print("Loading TTS...")
 tts_model = ParlerTTSForConditionalGeneration.from_pretrained("parler-tts/parler-tts-mini-expresso").to(TTS_DEVICE)
 tts_tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler-tts-mini-expresso")
 
-# Image Transforms (Must match your Colab training!)
+# Image Transforms 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),

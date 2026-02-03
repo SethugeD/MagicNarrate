@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 
 # -------------------------
-# CAPTION MODEL (Matches your Colab!)
+# CAPTION MODEL DEFINITION
 # -------------------------
 class CaptionModel(nn.Module):
     def __init__(self, vocab_size, feature_size=2048, embed_size=256, hidden_size=512):
@@ -24,7 +24,6 @@ class CaptionModel(nn.Module):
         return outputs
 
     def generate_caption(self, features, idx2word, max_len=20, device="cpu", word2idx=None, beam_size=3):
-        """Generate a caption given image features using beam search (matches Colab)"""
         import torch.nn.functional as F
         
         self.eval()
@@ -104,7 +103,6 @@ class CaptionModel(nn.Module):
 # RESNET FEATURE EXTRACTOR
 # -------------------------
 def get_resnet_extractor():
-    """Get ResNet50 for feature extraction (matches your Colab)"""
     resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
     # Remove the final classification layer
     resnet = nn.Sequential(*list(resnet.children())[:-1])
