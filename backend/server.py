@@ -10,7 +10,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from torchvision import transforms
-import google.generativeai as genai
+from openai import OpenAI
 from transformers import AutoTokenizer, set_seed
 from parler_tts import ParlerTTSForConditionalGeneration
 
@@ -107,13 +107,12 @@ def split_story(text: str, max_sentences: int = 2) -> list:
     return chunks
 
 
-# Configure Gemini API
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-llm = genai.GenerativeModel("gemma-3-4b-it")
+# Configure OpenAI API
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 def generate_story_text(emotion: str, genre: str, sentence: str) -> str:
-    """Generate story using Gemini API with the improved prompt"""
+    """Generate story using OpenAI API with the improved prompt"""
     prompt = f"""
 You are a creative children's storyteller.
 
@@ -138,8 +137,11 @@ Starting idea:
 
 End the story on an emotionally meaningful note.
 """
-    response = llm.generate_content(prompt)
-    return response.text
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
 
 
 # Map UI tones to parler-tts-mini-expresso emotions

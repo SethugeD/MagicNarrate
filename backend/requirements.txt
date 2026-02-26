@@ -5,7 +5,7 @@ torch
 torchvision
 transformers
 pillow
-google-genai
+openai
 parler-tts
 soundfile
 numpy
