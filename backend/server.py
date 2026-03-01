@@ -3,6 +3,7 @@ import io
 import re
 import torch
 import base64
+import warnings
 import soundfile as sf
 import numpy as np
 from dotenv import load_dotenv
@@ -17,8 +18,8 @@ from parler_tts import ParlerTTSForConditionalGeneration
 # Load environment variables
 load_dotenv()
 
-# Import your model (matches your Colab!)
-from model_def import CaptionModel, get_resnet_extractor
+# Import your model (attention-based model)
+from model_def import DecoderWithAttention, get_resnet_extractor, extract_features
 
 app = FastAPI()
 
@@ -63,19 +64,23 @@ except Exception as e:
     word2idx, idx2word = {}, {}
     vocab_size = 0
 
-# 2. Load ResNet for feature extraction 
+# 2. Load ResNet for feature extraction (spatial features for attention)
 print("Loading ResNet50 feature extractor...")
 resnet = get_resnet_extractor().to(DEVICE)
 
-# 3. Load your trained CaptionModel
-print("Loading Caption Model...")
-model = CaptionModel(vocab_size).to(DEVICE)
+# 3. Load your trained Attention-based Caption Model
+print("Loading Attention Caption Model...")
+model = DecoderWithAttention(vocab_size).to(DEVICE)
 
-model_path = os.path.join("image_captioning", "resnet50_model.pth")
+model_path = os.path.join("image_captioning", "resnet50_attention_model.pth")
 if os.path.exists(model_path):
     checkpoint = torch.load(model_path, map_location=DEVICE)
-    model.load_state_dict(checkpoint)
-    print("Caption model loaded successfully!")
+    # Handle both full checkpoint and state_dict formats
+    if isinstance(checkpoint, dict) and 'model' in checkpoint:
+        model.load_state_dict(checkpoint['model'])
+    else:
+        model.load_state_dict(checkpoint)
+    print("Attention caption model loaded successfully!")
 else:
     print(f"WARNING: Model file not found at {model_path}")
 
@@ -190,12 +195,14 @@ def generate_audio(story_text: str, emotion: str, speaker: str = "Lea"):
         prompt_attention_mask = prompt_tokens.attention_mask.to(TTS_DEVICE)
         
         with torch.no_grad():
-            audio = tts_model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                prompt_input_ids=prompt_input_ids,
-                prompt_attention_mask=prompt_attention_mask
-            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                audio = tts_model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    prompt_input_ids=prompt_input_ids,
+                    prompt_attention_mask=prompt_attention_mask
+                )
         
         audio_np = audio.cpu().numpy().squeeze()
         all_audio.append(audio_np)
@@ -260,15 +267,15 @@ async def generate_story(
     img_tensor = transform(pil_img).unsqueeze(0).to(DEVICE)
     
     with torch.no_grad():
-        # Extract features using ResNet (same as your Colab)
-        features = resnet(img_tensor).squeeze()  # [2048]
+        # Extract spatial features using ResNet for attention model
+        features = extract_features(resnet, img_tensor, device=DEVICE)  # [49, 2048]
         
         # Generate caption with beam search
-        caption = model.generate_caption(features, idx2word, max_len=20, device=DEVICE, word2idx=word2idx)
+        caption = model.generate_caption(features, idx2word, max_len=50, device=DEVICE, word2idx=word2idx, beam_size=5)
     
     print(f"Caption: {caption}")
 
-    # 2. STORY GENERATION (Gemini)
+    # 2. STORY GENERATION
     story_text = generate_story_text(tone, genre, caption)
     print(f"Generated story: {story_text[:100]}...")
 
