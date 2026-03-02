@@ -1,0 +1,8 @@
+Metric,Score
+BLEU-1,0.6117
+BLEU-2,0.4467
+BLEU-4,0.2161
+ROUGE-L,0.4372
+METEOR,0.3646
+Cosine Similarity,0.3143
+F1 Score,0.4449
