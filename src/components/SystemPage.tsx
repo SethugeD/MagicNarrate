@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Home, ImagePlus, Type, Wand2, Sparkles, Play, Pause, Volume2, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
+import { Home, ImagePlus, Type, Wand2, Sparkles, Play, Pause, Volume2, RotateCcw, SkipBack, SkipForward, Download } from 'lucide-react';
 
 interface SystemPageProps {
   onBackToHome: () => void;
@@ -20,6 +20,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [duration, setDuration] = useState(0);
   const [audioSrc, setAudioSrc] = useState<string>('');
   const [caption, setCaption] = useState('');
+  const [speakers, setSpeakers] = useState<string[]>(['Jon', 'Lea', 'Gary', 'Jenna']);
+  const [selectedSpeaker, setSelectedSpeaker] = useState('Lea');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -44,6 +46,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       const formData = new FormData();
       formData.append('genre', genre);
       formData.append('tone', emotionTone);
+      formData.append('speaker', selectedSpeaker);
       
       let endpoint = 'http://localhost:8000';
       
@@ -85,6 +88,26 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     }
   };
 
+  const handleDownloadAudio = async () => {
+    if (!audioSrc) return;
+
+    try {
+      const response = await fetch(audioSrc);
+      const audioBlob = await response.blob();
+      const url = URL.createObjectURL(audioBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `magicnarrate-${selectedSpeaker.toLowerCase()}-story.wav`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+      alert('Failed to download audio. Please try again.');
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
@@ -94,6 +117,25 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
         audioRef.current.pause();
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchSpeakers = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/speakers');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (Array.isArray(data.speakers) && data.speakers.length > 0) {
+          setSpeakers(data.speakers);
+          setSelectedSpeaker((prev) => (data.speakers.includes(prev) ? prev : data.speakers[0]));
+        }
+      } catch (error) {
+        console.error('Error fetching speakers:', error);
+      }
+    };
+
+    fetchSpeakers();
   }, []);
 
   // Update audio element when audioSrc changes
@@ -320,6 +362,23 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Speaker
+                  </label>
+                  <select
+                    value={selectedSpeaker}
+                    onChange={(e) => setSelectedSpeaker(e.target.value)}
+                    className="w-full p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-lg bg-white"
+                  >
+                    {speakers.map((speaker) => (
+                      <option key={speaker} value={speaker}>
+                        {speaker}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
               </div>
             </div>
 
@@ -372,6 +431,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                   <div className="flex items-center gap-2 mb-6">
                     <Volume2 className="w-5 h-5 text-purple-500" />
                     <span className="text-sm font-semibold text-gray-700">Audio Player</span>
+                    <span className="text-sm text-gray-500">• Voice: {selectedSpeaker}</span>
                   </div>
 
                   <div className="mb-6">
@@ -430,6 +490,14 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                   >
                     <RotateCcw className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                     Replay
+                  </button>
+
+                  <button
+                    onClick={handleDownloadAudio}
+                    className="w-full mt-3 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                  >
+                    <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+                    Download Audio
                   </button>
                 </div>
               )}
