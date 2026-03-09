@@ -8,7 +8,9 @@ An AI-powered storytelling app for kids that generates engaging stories with emo
 - ✍️ **Text-to-Story**: Enter a prompt and generate a story
 - 🎭 **Emotion Tones**: Choose from Joyful, Funny, Mysterious, Calm, Sad, Confused, or Dramatic
 - 📚 **Story Genres**: Adventure, Fantasy, Bedtime, Friendship, Learning, Confidence
-- 🔊 **Text-to-Speech**: Stories are narrated with emotional voices using Parler-TTS
+- 🔊 **Multiple Voices**: Select from Jon, Lea, Gary, or Jenna for narration
+- 🎙️ **Text-to-Speech**: Stories are narrated with emotional voices using Parler-TTS
+- ⬇️ **Audio Download**: Download generated audio as WAV files locally
 
 ## Tech Stack
 
@@ -20,7 +22,7 @@ An AI-powered storytelling app for kids that generates engaging stories with emo
 ### Backend
 - FastAPI (Python)
 - PyTorch (Image Captioning)
-- Google Gemini API (Story Generation)
+- OpenAI API (Story Generation)
 - Parler-TTS (Text-to-Speech)
 
 ## Setup
@@ -28,7 +30,7 @@ An AI-powered storytelling app for kids that generates engaging stories with emo
 ### Prerequisites
 - Node.js 18+
 - Python 3.10+
-- Google Gemini API key
+- OpenAI API key
 
 ### Frontend Setup
 ```bash
@@ -48,7 +50,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Create .env file with your API key
-echo "GEMINI_API_KEY=your_api_key_here" > .env
+echo "OPENAI_API_KEY=your_api_key_here" > .env
 
 # Download model files (see Model Files section)
 
@@ -73,11 +75,12 @@ Contact the repository owner for access to these files.
 2. Start the frontend dev server (port 5173)
 3. Open http://localhost:5173
 4. Choose text or image input mode
-5. Select genre and emotion tone
+5. Select genre, emotion tone, and narrator voice
 6. Click "Generate Story" and enjoy!
+7. Play the story with the audio player or download it as a WAV file
 
 ## API Endpoints
 
-- `POST /generate` - Generate story from image
-- `POST /generate-from-text` - Generate story from text prompt
+- `POST /generate` - Generate story from image (with optional speaker selection)
+- `POST /generate-from-text` - Generate story from text prompt (with optional speaker selection)
 - `GET /speakers` - Get available TTS voices
