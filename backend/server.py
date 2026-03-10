@@ -15,10 +15,8 @@ from openai import OpenAI
 from transformers import AutoTokenizer, set_seed
 from parler_tts import ParlerTTSForConditionalGeneration
 
-# Load environment variables
 load_dotenv()
 
-# Import your model (attention-based model)
 from model_def import DecoderWithAttention, get_resnet_extractor, extract_features
 
 app = FastAPI()
@@ -31,74 +29,58 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CONFIGURATION ---
-# Use MPS (Apple Silicon GPU) if available, otherwise CUDA, otherwise CPU
 if torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
-    print("🚀 Using MPS (Apple Silicon GPU) for captioning")
+    print("Using MPS (Apple Silicon GPU)")
 elif torch.cuda.is_available():
     DEVICE = torch.device("cuda")
-    print("🚀 Using CUDA GPU")
+    print("Using CUDA GPU")
 else:
     DEVICE = torch.device("cpu")
-    print("⚠️ Using CPU (slower)")
+    print("Using CPU")
 
-# TTS must run on CPU - MPS doesn't support large channel counts in audio decoder
 TTS_DEVICE = torch.device("cpu")
-print("🔊 TTS will run on CPU (MPS limitation)")
 
-# Available speakers for TTS (parler-tts-mini-expresso voices)
 AVAILABLE_SPEAKERS = ["Jon", "Lea", "Gary", "Jenna"]
 
-# --- LOAD MODELS ---
-print("Loading Models...")
+print("Loading models...")
 
-# 1. Load Vocabulary (your Colab saves as (word2idx, idx2word) tuple)
 try:
     vocab_path = os.path.join("image_captioning", "vocab.pt")
     word2idx, idx2word = torch.load(vocab_path, map_location="cpu")
     vocab_size = len(word2idx)
-    print(f"Vocabulary loaded. Size: {vocab_size}")
+    print(f"Vocabulary loaded: {vocab_size} words")
 except Exception as e:
-    print(f"Error loading vocab: {e}")
+    print(f"Error loading vocabulary: {e}")
     word2idx, idx2word = {}, {}
     vocab_size = 0
 
-# 2. Load ResNet for feature extraction (spatial features for attention)
-print("Loading ResNet50 feature extractor...")
 resnet = get_resnet_extractor().to(DEVICE)
-
-# 3. Load your trained Attention-based Caption Model
-print("Loading Attention Caption Model...")
 model = DecoderWithAttention(vocab_size).to(DEVICE)
 
 model_path = os.path.join("image_captioning", "resnet50_attention_model.pth")
 if os.path.exists(model_path):
     checkpoint = torch.load(model_path, map_location=DEVICE)
-    # Handle both full checkpoint and state_dict formats
     if isinstance(checkpoint, dict) and 'model' in checkpoint:
         model.load_state_dict(checkpoint['model'])
     else:
         model.load_state_dict(checkpoint)
-    print("Attention caption model loaded successfully!")
+    print("Caption model loaded")
 else:
-    print(f"WARNING: Model file not found at {model_path}")
+    print(f"Warning: Model file not found at {model_path}")
 
 model.eval()
 
-# 4. Load Parler-TTS (using expresso model for better emotional expression)
-print("Loading TTS...")
 tts_model = ParlerTTSForConditionalGeneration.from_pretrained("parler-tts/parler-tts-mini-expresso").to(TTS_DEVICE)
 tts_tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler-tts-mini-expresso")
 
-# Image Transforms 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-print("All models loaded! Server ready.")
+print("Models loaded. Server ready.")
 
 
 def split_story(text: str, max_sentences: int = 2) -> list:
@@ -112,7 +94,6 @@ def split_story(text: str, max_sentences: int = 2) -> list:
     return chunks
 
 
-# Configure OpenAI API
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
@@ -149,7 +130,6 @@ End the story on an emotionally meaningful note.
     return response.choices[0].message.content
 
 
-# Map UI tones to parler-tts-mini-expresso emotions
 TONE_TO_EMOTION = {
     "joyful": "happy",
     "funny": "laughing",
@@ -162,7 +142,6 @@ TONE_TO_EMOTION = {
 
 def generate_audio(story_text: str, emotion: str, speaker: str = "Lea"):
     """Generate TTS audio with chunking for better quality"""
-    # Convert UI tone to parler-tts emotion
     tts_emotion = TONE_TO_EMOTION.get(emotion, "default")
     
     description = f"""
@@ -184,7 +163,7 @@ def generate_audio(story_text: str, emotion: str, speaker: str = "Lea"):
     set_seed(42)
     
     for idx, chunk in enumerate(story_chunks):
-        print(f"🔊 Generating audio for part {idx+1}/{len(story_chunks)}")
+        print(f"Generating audio for part {idx+1}/{len(story_chunks)}")
         
         prompt_tokens = tts_tokenizer(
             chunk,
@@ -207,14 +186,10 @@ def generate_audio(story_text: str, emotion: str, speaker: str = "Lea"):
         audio_np = audio.cpu().numpy().squeeze()
         all_audio.append(audio_np)
         
-        # Pause between chunks (0.4 sec)
         pause = np.zeros(int(0.4 * tts_model.config.sampling_rate))
         all_audio.append(pause)
     
-    # Concatenate all audio
     final_audio = np.concatenate(all_audio)
-    
-    # Convert to base64
     buffer = io.BytesIO()
     sf.write(buffer, final_audio, tts_model.config.sampling_rate, format='WAV')
     audio_b64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
@@ -235,21 +210,14 @@ async def generate_story_from_text(
     tone: str = Form("joyful"),
     speaker: str = Form("Lea")
 ):
-    """Generate a story from a text prompt (no image needed)"""
-    print(f"Generating {genre} story from text prompt with speaker: {speaker}...")
+    """Generate a story from a text prompt"""
+    print(f"Generating {genre} story with speaker: {speaker}")
     
-    # 1. STORY GENERATION (Gemini)
     story_text = generate_story_text(tone, genre, prompt)
-    print(f"Generated story: {story_text[:100]}...")
-
-    # 2. AUDIO GENERATION
-    audio_b64, duration = generate_audio(story_text, tone, speaker)
-
+    print(f"Story generated: {story_text[:100]}...")
     return {
         "caption": prompt,
         "story": story_text,
-        "audio": f"data:audio/wav;base64,{audio_b64}",
-        "duration": duration
     }
 
 @app.post("/generate")
@@ -259,35 +227,42 @@ async def generate_story(
     tone: str = Form("joyful"),
     speaker: str = Form("Lea")
 ):
-    print(f"Processing image for {genre} story with speaker: {speaker}...")
+    print(f"Processing image for {genre} story with speaker: {speaker}")
     
-    # 1. CAPTIONING
     image_bytes = await image.read()
     pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img_tensor = transform(pil_img).unsqueeze(0).to(DEVICE)
     
     with torch.no_grad():
-        # Extract spatial features using ResNet for attention model
-        features = extract_features(resnet, img_tensor, device=DEVICE)  # [49, 2048]
-        
-        # Generate caption with beam search
+        features = extract_features(resnet, img_tensor, device=DEVICE)
         caption = model.generate_caption(features, idx2word, max_len=50, device=DEVICE, word2idx=word2idx, beam_size=5)
     
     print(f"Caption: {caption}")
-
-    # 2. STORY GENERATION
+    
     story_text = generate_story_text(tone, genre, caption)
-    print(f"Generated story: {story_text[:100]}...")
-
-    # 3. AUDIO GENERATION
-    audio_b64, duration = generate_audio(story_text, tone, speaker)
-
+    print(f"Story generated: {story_text[:100]}...")
     return {
         "caption": caption,
         "story": story_text,
+    }
+
+
+@app.post("/generate-audio")
+async def generate_audio_endpoint(
+    story: str = Form(...),
+    tone: str = Form("joyful"),
+    speaker: str = Form("Lea")
+):
+    """Generate audio narration for a given story text"""
+    print(f"Generating audio with speaker: {speaker}, tone: {tone}")
+    
+    audio_b64, duration = generate_audio(story, tone, speaker)
+    
+    return {
         "audio": f"data:audio/wav;base64,{audio_b64}",
         "duration": duration
     }
+
 
 if __name__ == "__main__":
     import uvicorn

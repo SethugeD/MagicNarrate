@@ -3,6 +3,7 @@ import { Sparkles, Volume2, Play, Pause, SkipBack, SkipForward, RotateCcw, Downl
 interface StoryResultSectionProps {
   generatedStory: string;
   isPlaying: boolean;
+  isGeneratingAudio: boolean;
   progress: number;
   duration: number;
   selectedSpeaker: string;
@@ -18,6 +19,7 @@ interface StoryResultSectionProps {
 export default function StoryResultSection({
   generatedStory,
   isPlaying,
+  isGeneratingAudio,
   progress,
   duration,
   selectedSpeaker,
@@ -60,73 +62,91 @@ export default function StoryResultSection({
               <Volume2 className="w-5 h-5 text-purple-500" />
               <span className="text-sm font-semibold text-gray-700">Audio Player</span>
               <span className="text-sm text-gray-500">• Voice: {selectedSpeaker}</span>
+              {isGeneratingAudio && (
+                <span className="text-sm text-purple-600 font-semibold animate-pulse">
+                  Generating audio...
+                </span>
+              )}
             </div>
 
-            <div className="mb-6">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={progress}
-                onChange={onSeek}
-                className="w-full h-2 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full appearance-none cursor-pointer slider"
-                style={{
-                  background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(236, 72, 153) ${progress * 100}%, rgb(243, 232, 255) ${progress * 100}%, rgb(243, 232, 255) 100%)`,
-                }}
-              />
-              <div className="flex justify-between text-xs text-gray-600 mt-2">
-                <span>{formatTime(progress * duration)}</span>
-                <span>{formatTime(duration)}</span>
+            {isGeneratingAudio ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="inline-block">
+                    <Sparkles className="w-8 h-8 text-purple-500 animate-spin" />
+                  </div>
+                  <p className="text-gray-600 mt-3 font-medium">Generating audio narration...</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={progress}
+                    onChange={onSeek}
+                    className="w-full h-2 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full appearance-none cursor-pointer slider"
+                    style={{
+                      background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(236, 72, 153) ${progress * 100}%, rgb(243, 232, 255) ${progress * 100}%, rgb(243, 232, 255) 100%)`,
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-gray-600 mt-2">
+                    <span>{formatTime(progress * duration)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
 
-            <div className="flex gap-2 items-center justify-center mb-4">
-              <button
-                onClick={onSkipBackward}
-                className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
-              >
-                <SkipBack className="w-5 h-5" />
-              </button>
-              <button
-                onClick={onPlayPause}
-                className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    Pause
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    Play
-                  </>
-                )}
-              </button>
-              <button
-                onClick={onSkipForward}
-                className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
-              >
-                <SkipForward className="w-5 h-5" />
-              </button>
-            </div>
+                <div className="flex gap-2 items-center justify-center mb-4">
+                  <button
+                    onClick={onSkipBackward}
+                    className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
+                  >
+                    <SkipBack className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={onPlayPause}
+                    className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                  >
+                    {isPlaying ? (
+                      <>
+                        <Pause className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Pause
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Play
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={onSkipForward}
+                    className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
+                  >
+                    <SkipForward className="w-5 h-5" />
+                  </button>
+                </div>
 
-            <button
-              onClick={onStop}
-              className="w-full py-3 px-6 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition-all shadow-lg flex items-center justify-center gap-2 group"
-            >
-              <RotateCcw className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              Replay
-            </button>
+                <button
+                  onClick={onStop}
+                  className="w-full py-3 px-6 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                >
+                  <RotateCcw className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  Replay
+                </button>
 
-            <button
-              onClick={onDownload}
-              className="w-full mt-3 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
-            >
-              <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-              Download Audio
-            </button>
+                <button
+                  onClick={onDownload}
+                  className="w-full mt-3 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                >
+                  <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+                  Download Audio
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

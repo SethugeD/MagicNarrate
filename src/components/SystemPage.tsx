@@ -17,6 +17,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [emotionTone, setEmotionTone] = useState('calm');
   const [generatedStory, setGeneratedStory] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -42,6 +43,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     setIsGenerating(true);
     setGeneratedStory('');
     setAudioSrc('');
+    setIsGeneratingAudio(false);
     
     try {
       const formData = new FormData();
@@ -52,11 +54,9 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       let endpoint = 'http://localhost:8000';
       
       if (inputMode === 'text') {
-        // Text-based generation
         endpoint += '/generate-from-text';
         formData.append('prompt', textInput);
       } else {
-        // Image-based generation
         endpoint += '/generate';
         // Convert base64 image to blob
         if (fileInputRef.current?.files?.[0]) {
@@ -77,14 +77,37 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       
       const data = await response.json();
       setGeneratedStory(data.story);
-      setAudioSrc(data.audio);
-      setDuration(data.duration);
+      setIsGenerating(false);
+      
+      setIsGeneratingAudio(true);
+      
+      const audioFormData = new FormData();
+      audioFormData.append('story', data.story);
+      audioFormData.append('tone', emotionTone);
+      audioFormData.append('speaker', selectedSpeaker);
+      
+      try {
+        const audioResponse = await fetch('http://localhost:8000/generate-audio', {
+          method: 'POST',
+          body: audioFormData,
+        });
+        
+        if (!audioResponse.ok) {
+          throw new Error('Failed to generate audio');
+        }
+        
+        const audioData = await audioResponse.json();
+        setAudioSrc(audioData.audio);
+        setDuration(audioData.duration);
+      } finally {
+        setIsGeneratingAudio(false);
+      }
       
     } catch (error) {
       console.error('Error generating story:', error);
       alert('Failed to generate story. Make sure the backend is running.');
-    } finally {
       setIsGenerating(false);
+      setIsGeneratingAudio(false);
     }
   };
 
@@ -137,7 +160,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     fetchSpeakers();
   }, []);
 
-  // Update audio element when audioSrc changes
   useEffect(() => {
     if (audioSrc && audioRef.current) {
       audioRef.current.src = audioSrc;
@@ -194,7 +216,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-100 relative overflow-hidden">
-      {/* Hidden audio element for TTS playback */}
       <audio 
         ref={audioRef}
         onTimeUpdate={() => {
@@ -406,6 +427,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
               <StoryResultSection
                 generatedStory={generatedStory}
                 isPlaying={isPlaying}
+                isGeneratingAudio={isGeneratingAudio}
                 progress={progress}
                 duration={duration}
                 selectedSpeaker={selectedSpeaker}
