@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { Home, ImagePlus, Type, Wand2, Sparkles, Play, Pause, Volume2, RotateCcw, SkipBack, SkipForward, Download } from 'lucide-react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { Home, ImagePlus, Type, Wand2, Sparkles } from 'lucide-react';
+
+const StoryResultSection = lazy(() => import('./StoryResultSection'));
 
 interface SystemPageProps {
   onBackToHome: () => void;
@@ -19,11 +21,10 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioSrc, setAudioSrc] = useState<string>('');
-  const [caption, setCaption] = useState('');
   const [speakers, setSpeakers] = useState<string[]>(['Jon', 'Lea', 'Gary', 'Jenna']);
   const [selectedSpeaker, setSelectedSpeaker] = useState('Lea');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +77,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       
       const data = await response.json();
       setGeneratedStory(data.story);
-      setCaption(data.caption);
       setAudioSrc(data.audio);
       setDuration(data.duration);
       
@@ -131,7 +131,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           setSelectedSpeaker((prev) => (data.speakers.includes(prev) ? prev : data.speakers[0]));
         }
       } catch (error) {
-        console.error('Error fetching speakers:', error);
       }
     };
 
@@ -222,19 +221,19 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-        <header className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between gap-4 mb-8 flex-wrap">
           <div className="flex items-center gap-3">
-            <Wand2 className="w-10 h-10 text-purple-500" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+            <Wand2 className="w-8 h-8 md:w-10 md:h-10 text-purple-500" />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent whitespace-nowrap">
               MagicNarrate
             </h1>
           </div>
           <button
             onClick={onBackToHome}
-            className="flex items-center gap-2 px-6 py-3 bg-white/80 backdrop-blur-sm text-gray-700 rounded-full font-semibold hover:bg-white transition-all shadow-lg hover:scale-105"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/80 backdrop-blur-sm text-gray-700 rounded-full font-semibold hover:bg-white transition-all shadow-lg hover:scale-105 text-sm sm:text-base"
           >
-            <Home className="w-5 h-5" />
-            Home
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Home</span>
           </button>
         </header>
 
@@ -403,105 +402,22 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 flex flex-col" style={{ height: 'fit-content', minHeight: '600px' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 text-pink-500" />
-                  Your Story
-                </h2>
-              </div>
-
-              {generatedStory ? (
-                <div className="flex-1 overflow-y-auto mb-8">
-                  <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {generatedStory}
-                  </p>
-                </div>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <Wand2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">Your magical story will appear here...</p>
-                  </div>
-                </div>
-              )}
-
-              {generatedStory && (
-                <div className="border-t-2 border-purple-100 pt-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Volume2 className="w-5 h-5 text-purple-500" />
-                    <span className="text-sm font-semibold text-gray-700">Audio Player</span>
-                    <span className="text-sm text-gray-500">• Voice: {selectedSpeaker}</span>
-                  </div>
-
-                  <div className="mb-6">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={progress}
-                      onChange={handleSeek}
-                      className="w-full h-2 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(236, 72, 153) ${progress * 100}%, rgb(243, 232, 255) ${progress * 100}%, rgb(243, 232, 255) 100%)`,
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-gray-600 mt-2">
-                      <span>{formatTime(progress * duration)}</span>
-                      <span>{formatTime(duration)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 items-center justify-center mb-4">
-                    <button
-                      onClick={handleSkipBackward}
-                      className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
-                    >
-                      <SkipBack className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={handlePlayPause}
-                      className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
-                    >
-                      {isPlaying ? (
-                        <>
-                          <Pause className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          Pause
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          Play
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleSkipForward}
-                      className="p-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all shadow-lg hover:scale-110"
-                    >
-                      <SkipForward className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={handleStop}
-                    className="w-full py-3 px-6 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition-all shadow-lg flex items-center justify-center gap-2 group"
-                  >
-                    <RotateCcw className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                    Replay
-                  </button>
-
-                  <button
-                    onClick={handleDownloadAudio}
-                    className="w-full mt-3 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 group"
-                  >
-                    <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-                    Download Audio
-                  </button>
-                </div>
-              )}
-            </div>
+            <Suspense fallback={<div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 h-96 flex items-center justify-center text-gray-400">Loading...</div>}>
+              <StoryResultSection
+                generatedStory={generatedStory}
+                isPlaying={isPlaying}
+                progress={progress}
+                duration={duration}
+                selectedSpeaker={selectedSpeaker}
+                onPlayPause={handlePlayPause}
+                onSkipBackward={handleSkipBackward}
+                onSkipForward={handleSkipForward}
+                onStop={handleStop}
+                onDownload={handleDownloadAudio}
+                onSeek={handleSeek}
+                formatTime={formatTime}
+              />
+            </Suspense>
           </div>
         </div>
       </div>

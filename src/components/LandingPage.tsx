@@ -22,13 +22,13 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-16">
         <header className="text-center mb-16 animate-fade-in">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Wand2 className="w-12 h-12 text-purple-500" />
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 bg-clip-text text-transparent pb-1 leading-tight">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 flex-wrap px-4">
+            <Wand2 className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-purple-500" />
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 bg-clip-text text-transparent pb-1 leading-tight">
               MagicNarrate
             </h1>
           </div>
-          <p className="text-2xl text-gray-700 font-medium">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 font-medium px-4">
             Bring your stories to life with AI-powered imagination
           </p>
         </header>
