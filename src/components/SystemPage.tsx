@@ -260,52 +260,52 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
           <div className="space-y-6">
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-yellow-500" />
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
                 Create Your Story
               </h2>
 
-              <div className="flex gap-4 mb-6">
+              <div className="flex gap-3 sm:gap-4 mb-6">
                 <button
                   onClick={() => setInputMode('text')}
-                  className={`flex-1 py-4 px-6 rounded-2xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-2xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
                     inputMode === 'text'
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  <Type className="w-5 h-5" />
+                  <Type className="w-4 h-4 sm:w-5 sm:h-5" />
                   Text Input
                 </button>
                 <button
                   onClick={() => setInputMode('image')}
-                  className={`flex-1 py-4 px-6 rounded-2xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-2xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
                     inputMode === 'image'
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  <ImagePlus className="w-5 h-5" />
+                  <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
                   Image Upload
                 </button>
               </div>
 
               {inputMode === 'text' ? (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Describe your story idea
                   </label>
                   <textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="A brave little dragon who loves to bake cookies..."
-                    className="w-full h-40 p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none resize-none text-lg"
+                    className="w-full h-32 sm:h-40 p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none resize-none text-sm sm:text-base"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Upload an image
                   </label>
                   <div className="relative">
@@ -319,7 +319,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                     />
                     <label
                       htmlFor="image-upload"
-                      className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer hover:border-purple-400 transition-all hover:bg-purple-50"
+                      className="flex flex-col items-center justify-center h-32 sm:h-40 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer hover:border-purple-400 transition-all hover:bg-purple-50"
                     >
                       {imagePreview ? (
                         <img
@@ -329,8 +329,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                         />
                       ) : (
                         <>
-                          <ImagePlus className="w-12 h-12 text-purple-400 mb-2" />
-                          <span className="text-gray-600 font-medium">
+                          <ImagePlus className="w-8 h-8 sm:w-12 sm:h-12 text-purple-400 mb-2" />
+                          <span className="text-xs sm:text-base text-gray-600 font-medium">
                             Click to upload
                           </span>
                         </>
@@ -341,18 +341,18 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
               )}
             </div>
 
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">Story Settings</h3>
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Story Settings</h3>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Genre
                   </label>
                   <select
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-lg bg-white"
+                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
                   >
                     <option value="adventure">🗺️ Adventure</option>
                     <option value="fantasy">✨ Fantasy</option>
@@ -364,13 +364,13 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Emotion Tone
                   </label>
                   <select
                     value={emotionTone}
                     onChange={(e) => setEmotionTone(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-lg bg-white"
+                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
                   >
                     <option value="joyful">😊 Joyful</option>
                     <option value="funny">😄 Funny</option>
@@ -383,13 +383,13 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Speaker
                   </label>
                   <select
                     value={selectedSpeaker}
                     onChange={(e) => setSelectedSpeaker(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-lg bg-white"
+                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
                   >
                     {speakers.map((speaker) => (
                       <option key={speaker} value={speaker}>
@@ -405,18 +405,18 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
             <button
               onClick={handleGenerateStory}
               disabled={isGenerating || (!textInput && !imagePreview)}
-              className="w-full py-5 px-8 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white text-xl font-bold rounded-full shadow-2xl hover:shadow-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 flex items-center justify-center gap-3 group"
+              className="w-full py-4 sm:py-5 px-6 sm:px-8 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white text-base sm:text-lg font-bold rounded-full shadow-2xl hover:shadow-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 flex items-center justify-center gap-2 sm:gap-3 group"
             >
               {isGenerating ? (
                 <>
-                  <Wand2 className="w-6 h-6 animate-spin" />
+                  <Wand2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
                   Generating Magic...
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                  <Wand2 className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
                   Generate Story
-                  <Sparkles className="w-6 h-6" />
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
                 </>
               )}
             </button>
