@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
 }
 
 @layer utilities {
@@ -59,12 +57,14 @@ body {
   }
 
   .animate-float {
-    animation: float 3s ease-in-out infinite;
+    animation: float 6s ease-in-out infinite;
+    will-change: transform;
   }
 
   .animate-float-delayed {
-    animation: float-delayed 4s ease-in-out infinite;
+    animation: float-delayed 8s ease-in-out infinite;
     animation-delay: 1s;
+    will-change: transform;
   }
 
   .animate-fade-in {
