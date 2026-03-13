@@ -1,86 +1,120 @@
-# MagicNarrate 🪄📖
+# MagicNarrate 🪄
 
-An AI-powered storytelling app for kids that generates engaging stories with emotional narration from images or text prompts.
+MagicNarrate is an AI-powered storytelling app that turns image or text prompts into children's stories, then narrates them with selectable voices.
+
+## Live Architecture
+
+- Frontend: Vercel (React + Vite)
+- Backend: HuggingFace Spaces (FastAPI + Docker)
+- Story generation: OpenAI API
+- Voice narration: Parler-TTS
 
 ## Features
 
-- 🖼️ **Image-to-Story**: Upload an image and get a creative story based on it
-- ✍️ **Text-to-Story**: Enter a prompt and generate a story
-- 🎭 **Emotion Tones**: Choose from Joyful, Funny, Mysterious, Calm, Sad, Confused, or Dramatic
-- 📚 **Story Genres**: Adventure, Fantasy, Bedtime, Friendship, Learning, Confidence
-- 🔊 **Multiple Voices**: Select from Jon, Lea, Gary, or Jenna for narration
-- 🎙️ **Text-to-Speech**: Stories are narrated with emotional voices using Parler-TTS
-- ⬇️ **Audio Download**: Download generated audio as WAV files locally
+- Image-to-story generation
+- Text-to-story generation
+- Genre and emotion-tone controls
+- Multiple speaker voices (Jon, Lea, Gary, Jenna)
+- Audio playback controls and WAV download
 
 ## Tech Stack
 
 ### Frontend
-- React + TypeScript
+- React
+- TypeScript
 - Vite
 - Tailwind CSS
 
 ### Backend
-- FastAPI (Python)
-- PyTorch (Image Captioning)
-- OpenAI API (Story Generation)
-- Parler-TTS (Text-to-Speech)
+- FastAPI
+- PyTorch
+- torchvision
+- OpenAI Python SDK
+- Parler-TTS
 
-## Setup
+## Project Structure
+
+- `src/` frontend source code
+- `backend/` local backend for development
+- `hf-space/` deployed backend source for HuggingFace Space
+
+## Local Development
 
 ### Prerequisites
+
 - Node.js 18+
 - Python 3.10+
 - OpenAI API key
 
-### Frontend Setup
+### 1) Start backend
+
 ```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+echo "OPENAI_API_KEY=your_api_key_here" > .env
+python server.py
+```
+
+Backend runs at `http://localhost:8000`.
+
+### 2) Start frontend
+
+```bash
+cd ..
 npm install
 npm run dev
 ```
 
-### Backend Setup
-```bash
-cd backend
+Frontend runs at `http://localhost:5173`.
 
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+## Environment Variables
 
-# Install dependencies
-pip install -r requirements.txt
+### Frontend (`.env.local`)
 
-# Create .env file with your API key
-echo "OPENAI_API_KEY=your_api_key_here" > .env
-
-# Download model files (see Model Files section)
-
-# Run server
-python server.py
+```env
+VITE_API_URL=http://localhost:8000
 ```
 
-### Model Files
+For production (Vercel), set `VITE_API_URL` to your Space URL:
 
-The following model files are required but not included in the repo (too large):
+```env
+VITE_API_URL=https://damz25-magic-narrate.hf.space
+```
 
-Place these in `backend/image_captioning/`:
-- `resnet50_model.pth` (~19MB) - Trained caption model
-- `resnet50_features.pt` (~66MB) - ResNet50 features
-- `vocab.pt` (~80KB) - Vocabulary file
+### Backend (`backend/.env` locally, Space Secrets in production)
 
-Contact the repository owner for access to these files.
+```env
+OPENAI_API_KEY=your_openai_api_key
+```
 
-## Usage
+## Model Files
 
-1. Start the backend server (port 8000)
-2. Start the frontend dev server (port 5173)
-3. Open http://localhost:5173
-4. Choose text or image input mode
-5. Select genre, emotion tone, and narrator voice
-6. Click "Generate Story" and enjoy!
-7. Play the story with the audio player or download it as a WAV file
+Required files for backend inference:
+
+For `backend/image_captioning/`:
+- `resnet50_attention_model.pth`
+- `resnet50_features.pt`
+- `vocab.pt`
+
+For `hf-space/image_captioning/`:
+- `resnet50_attention_model.pth`
+- `vocab.pt`
 
 ## API Endpoints
 
-- `POST /generate` - Generate story from image (with optional speaker selection)
-- `POST /generate-from-text` - Generate story from text prompt (with optional speaker selection)
-- `GET /speakers` - Get available TTS voices
+- `GET /` basic service info
+- `GET /health` health check
+- `GET /speakers` available speaker list
+- `POST /generate` generate story from uploaded image
+- `POST /generate-from-text` generate story from text prompt
+- `POST /generate-audio` generate narrated audio from story text using selected speaker
+
+## Deployment
+
+- Frontend deployment is configured for Vercel using `vercel.json`
+- Backend deployment is configured for HuggingFace Spaces using `hf-space/Dockerfile`
+- Set environment variables in each platform dashboard:
+	- Vercel: `VITE_API_URL`
+	- HuggingFace Space Secrets: `OPENAI_API_KEY`
