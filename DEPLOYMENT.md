@@ -1,231 +1,127 @@
 # MagicNarrate Deployment Guide
 
-This guide covers deploying MagicNarrate to **Vercel** (frontend) and **HuggingFace Spaces** (backend).
+This guide covers the current production setup:
 
-## System Architecture
+- Frontend: Vercel (React + Vite)
+- Backend API: HuggingFace Spaces (FastAPI, Docker)
+- TTS Inference: RunPod Serverless (queue-based endpoint)
 
-```
-┌─────────────────────────────────────┐
-│     Vercel (Frontend - React)       │
-│     - Hosted at custom domain       │
-│     - CDN edge locations worldwide  │
-└────────────┬────────────────────────┘
-             │
-             │ API Calls
-             │
-             ▼
-┌─────────────────────────────────────┐
-│  HuggingFace Spaces (Backend)       │
-│  - FastAPI server running on Space  │
-│  - Model inference (TTS, Captions)  │
-│  - OpenAI API integration           │
-└─────────────────────────────────────┘
-```
+## Architecture
 
----
+Vercel frontend -> HF Space API -> RunPod TTS worker -> audio returned to frontend
 
 ## Prerequisites
 
-### Required API Keys
-1. **OpenAI API Key** - For story generation
-   - Sign up at https://platform.openai.com/
-   - Create API key in Account > API keys
+- OpenAI API key
+- HuggingFace account and Space
+- RunPod account with serverless endpoint
+- Vercel account
+- GitHub repo for source control
 
-2. **HuggingFace Token** (Optional but recommended)
-   - Sign up at https://huggingface.co/
-   - Create token at https://huggingface.co/settings/tokens
-   - Needed if using restricted models
+## 1) RunPod Setup (TTS)
 
-### Required Tools
-- Git
-- Node.js 18+ (for local frontend testing)
-- GitHub account (for source code)
-- Vercel account (https://vercel.com)
-- HuggingFace account (https://huggingface.co)
+Create a queue-based serverless endpoint using the worker folder in this repo:
 
----
+- Repo: `SethugeD/MagicNarrate`
+- Branch: your deployment branch
+- Dockerfile Path: `/runpod-worker/Dockerfile`
+- Build Context: `/runpod-worker`
+- Endpoint name: `MagicNarrate-tts`
 
-## Part 1: Deploy Backend to HuggingFace Spaces
+Recommended initial endpoint settings:
 
-### Step 1: Create New HuggingFace Space
+- Min workers: `0`
+- Max workers: `1`
+- Container disk: `20-30 GB`
+- Idle timeout: `10 min`
 
-1. Go to https://huggingface.co/spaces
-2. Click "Create new Space"
-3. Configuration:
-   - **Owner**: Your username
-   - **Space name**: `MagicNarrate` (or your preference)
-   - **License**: Choose appropriate license
-   - **Space SDK**: Select "Docker"
-   - **Space hardware**: Select "CPU basic" or higher (GPU recommended for faster inference)
-   - **Private/Public**: Choose based on preference
+Record these values:
 
-### Step 2: Connect Repository
+- RunPod API key
+- RunPod endpoint ID
 
-1. In your local repository, push changes to GitHub (if not already):
-   ```bash
-   git add .
-   git commit -m "Add Vercel and deployment config"
-   git push origin main
-   ```
+## 2) Backend Setup (HF Space)
 
-2. In HuggingFace Space settings:
-   - Connect your GitHub repository
-   - Select `hf-space/` as the source folder (or root, depending on setup)
+Use Docker SDK in HF Space and deploy backend API from `hf-space/` files.
 
-### Step 3: Configure Environment Variables
+Set these HF Space secrets:
 
-In HuggingFace Space settings → "Repository secrets":
+- `OPENAI_API_KEY`
+- `TTS_PROVIDER=runpod`
+- `RUNPOD_API_KEY`
+- `RUNPOD_ENDPOINT_ID`
+- `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
+- `AUDIO_JOB_TIMEOUT_SEC=420`
 
-Add these secrets:
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `HF_TOKEN`: (Optional) Your HuggingFace token
+Deploy and verify:
 
-The Space will automatically read these `.env` values.
+- `GET /health` returns `{"status":"healthy"}`
+- `POST /generate-audio-job` returns `job_id`
 
-### Step 4: Verify Backend Deployment
+## 3) Frontend Setup (Vercel)
 
-Once deployed (give it 5-10 minutes to build):
+Set these environment variables in Vercel project settings:
 
-1. Open your HF Space URL (e.g., `https://huggingface.co/spaces/your-username/MagicNarrate`)
-2. Test endpoints:
-   ```bash
-   curl https://your-username-MagicNarrate.hf.space/speakers
-   ```
+- `VITE_API_URL=https://<your-space>.hf.space`
+- `VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500`
+- `VITE_AUDIO_JOB_TIMEOUT_MS=420000`
 
-3. Note down your **HF Space URL** - you'll need this for frontend deployment.
+Redeploy frontend after changing env values.
 
----
+## 4) Verify Production
 
-## Part 2: Deploy Frontend to Vercel
+Use script:
 
-### Step 1: Connect Repository to Vercel
+```bash
+chmod +x verify-deployment.sh
+./verify-deployment.sh https://<your-space>.hf.space https://<your-app>.vercel.app
+```
 
-1. Go to https://vercel.com/new
-2. Import your GitHub repository
-3. Configure project:
-   - **Framework**: Vite
-   - **Root Directory**: `./` (root)
-   - **Build Command**: `npm run build` (should auto-detect)
-   - **Output Directory**: `dist` (should auto-detect)
+Manual checks:
 
-### Step 2: Add Environment Variables
-
-In Vercel project settings → "Environment Variables":
-
-Add:
-- **Name**: `VITE_API_URL`
-- **Value**: Your HF Space URL (e.g., `https://your-username-MagicNarrate.hf.space`)
-- **Environments**: Production, Preview, Development
-
-### Step 3: Configure Custom Domain (Optional)
-
-1. Go to project settings → "Domains"
-2. Add your custom domain or use Vercel's default domain
-
-### Step 4: Deploy
-
-1. Push changes to GitHub (if not already pushed):
-   ```bash
-   git push origin main
-   ```
-
-2. Vercel will automatically build and deploy on every push to `main` branch
-
-3. Once deployed, your frontend will be live at the provided URL
-
----
-
-## Verification Checklist
-
-- [ ] Backend Space is running and responding to requests
-- [ ] Frontend URL is accessible
-- [ ] Environment variables are set correctly in Vercel
-- [ ] Image upload functionality works
-- [ ] Text input generates stories
-- [ ] Audio generation works with story output
-- [ ] Custom domain resolves (if applicable)
-
----
+- Frontend loads without API/CORS errors
+- Generate story from text and from image
+- Audio job transitions from `queued` to `done`
+- Audio playback and download work
 
 ## Troubleshooting
 
-### Frontend shows "Failed to generate story"
+### `POST /generate-audio-job` returns `404`
 
-1. Check browser console (F12) for CORS errors
-2. Verify `VITE_API_URL` environment variable in Vercel settings
-3. Ensure HF Space backend is running:
-   ```bash
-   curl -I https://your-space-url/speakers
-   ```
+HF Space is running old backend code. Redeploy the updated backend.
 
-### Backend Space keeps restarting
+### Jobs remain `queued`
 
-1. Check HF Space logs for errors
-2. Verify `OPENAI_API_KEY` is set correctly
-3. Ensure model files are present in `image_captioning/` folder
+RunPod worker likely cold, unavailable, or underprovisioned.
 
-### Slow performance
+- Check RunPod endpoint logs
+- Increase max workers temporarily to `2`
+- Warm endpoint with one short test request before demos
 
-1. Consider upgrading HF Space hardware (GPU option)
-2. Check Vercel analytics for slow endpoints
-3. Monitor model loading times in backend logs
+### Frontend still calls old API
 
----
+Vercel envs are build-time values for Vite.
 
-## Local Development (Testing Before Deployment)
+- Confirm `VITE_API_URL`
+- Trigger a fresh Vercel redeploy
 
-### Test Backend Locally
+## Local Development
+
+Backend:
 
 ```bash
 cd backend
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-export OPENAI_API_KEY=your_key_here
 python server.py
 ```
 
-The backend will be available at `http://localhost:8000`
-
-### Test Frontend Locally
+Frontend:
 
 ```bash
 npm install
 npm run dev
-# Frontend will be at http://localhost:5173
 ```
 
-The frontend will automatically use `http://localhost:8000` for API calls (from `.env.local`).
-
----
-
-## Auto-Deployment on Code Changes
-
-Both Vercel (frontend) and HuggingFace Spaces (if connected to GitHub) will automatically redeploy when you push changes to your GitHub repository.
-
----
-
-## Cost Considerations
-
-### HuggingFace Spaces
-- Free tier: Limited compute, restarts if inactive
-- Paid tiers: $7.50-$30/month for persistent uptime
-
-### Vercel
-- Free tier: Suitable for most projects (performance optimizations included)
-- Pro tier: $20/month for advanced features
-
-### For Context
-- OpenAI API: Pay-per-use (~$0.001-$0.01 per story depending on model)
-- HuggingFace models: Free to use (many open-source models included)
-
----
-
-## Next Steps
-
-1. Configure API keys in HuggingFace Space
-2. Deploy backend to HuggingFace Spaces
-3. Add `VITE_API_URL` to Vercel environment
-4. Deploy frontend to Vercel
-5. Test all features on production URLs
-6. Set custom domain (optional)
-
-Need help? Check HuggingFace and Vercel documentation or open an issue on GitHub!
+Use `.env.local` for frontend and `backend/.env` for backend secrets.

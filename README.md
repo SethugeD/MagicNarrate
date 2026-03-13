@@ -177,5 +177,5 @@ For `hf-space/image_captioning/`:
 - Frontend deployment is configured for Vercel using `vercel.json`
 - Backend deployment is configured for HuggingFace Spaces using `hf-space/Dockerfile`
 - Set environment variables in each platform dashboard:
-	- Vercel: `VITE_API_URL`
-	- HuggingFace Space Secrets: `OPENAI_API_KEY`
+	- Vercel: `VITE_API_URL`, `VITE_AUDIO_JOB_POLL_INTERVAL_MS`, `VITE_AUDIO_JOB_TIMEOUT_MS`
+	- HuggingFace Space Secrets: `OPENAI_API_KEY`, `TTS_PROVIDER`, `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `AUDIO_JOB_POLL_INTERVAL_SEC`, `AUDIO_JOB_TIMEOUT_SEC`

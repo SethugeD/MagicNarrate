@@ -1,58 +1,78 @@
 #!/bin/bash
 
 # Deployment verification script for MagicNarrate
-# Usage: ./verify-deployment.sh <hf_space_url> <vercel_url>
+# Usage:
+#   ./verify-deployment.sh <hf_space_url_or_hf_space_api_url> <vercel_url>
 
 set -e
 
 HF_SPACE_URL="${1:-https://huggingface.co/spaces/your-username/MagicNarrate}"
 VERCEL_URL="${2:-https://your-project.vercel.app}"
 
-echo "🚀 MagicNarrate Deployment Verification"
-echo "========================================"
-echo ""
+echo "MagicNarrate Deployment Verification"
+echo "===================================="
+echo
 
-# Extract base URL from HF Space URL (remove trailing spaces path)
-HF_API_URL="${HF_SPACE_URL%/spaces/*}"
+HF_API_URL="$HF_SPACE_URL"
 if [[ $HF_SPACE_URL == *"/spaces/"* ]]; then
-  HF_USERNAME=$(echo $HF_SPACE_URL | grep -oP 'spaces/\K[^/]+')
-  HF_SPACE_NAME=$(echo $HF_SPACE_URL | grep -oP 'spaces/[^/]+/\K[^/]+')
+  HF_USERNAME=$(echo "$HF_SPACE_URL" | grep -oE 'spaces/[^/]+' | cut -d/ -f2)
+  HF_SPACE_NAME=$(echo "$HF_SPACE_URL" | grep -oE 'spaces/[^/]+/[^/]+' | cut -d/ -f3)
   HF_API_URL="https://${HF_USERNAME}-${HF_SPACE_NAME}.hf.space"
 fi
 
-echo "Checking Backend (HuggingFace Spaces)..."
-echo "URL: $HF_API_URL"
+echo "Backend URL: $HF_API_URL"
 
-# Check speakers endpoint
-if curl -s "$HF_API_URL/speakers" > /dev/null 2>&1; then
-  echo "✅ Backend is accessible"
-  
-  SPEAKERS=$(curl -s "$HF_API_URL/speakers" | jq -r '.speakers[]' 2>/dev/null || echo "")
-  if [ -n "$SPEAKERS" ]; then
-    echo "✅ Available speakers: $SPEAKERS"
-  fi
+health_payload=$(curl -s "$HF_API_URL/health" || true)
+if echo "$health_payload" | grep -q '"status":"healthy"'; then
+  echo "PASS: /health"
 else
-  echo "❌ Backend is not responding"
-  echo "   Make sure the HF Space is running and has the correct URL"
+  echo "FAIL: /health"
+  echo "Response: $health_payload"
+  exit 1
 fi
 
-echo ""
-echo "Checking Frontend (Vercel)..."
-echo "URL: $VERCEL_URL"
+root_payload=$(curl -s "$HF_API_URL/" || true)
+if echo "$root_payload" | grep -q 'generate-audio-job'; then
+  echo "PASS: async backend version deployed"
+else
+  echo "WARN: root message does not mention generate-audio-job"
+  echo "Response: $root_payload"
+fi
 
-# Check if frontend is accessible
+speakers_payload=$(curl -s "$HF_API_URL/speakers" || true)
+if echo "$speakers_payload" | grep -q '"speakers"'; then
+  echo "PASS: /speakers"
+else
+  echo "FAIL: /speakers"
+  echo "Response: $speakers_payload"
+  exit 1
+fi
+
+echo
+echo "Checking async TTS job create endpoint..."
+job_payload=$(curl -s -X POST "$HF_API_URL/generate-audio-job" \
+  -F "story=A tiny fox found a glowing lantern and smiled." \
+  -F "tone=joyful" \
+  -F "speaker=Lea" || true)
+
+if echo "$job_payload" | grep -q '"job_id"'; then
+  job_id=$(echo "$job_payload" | sed -n 's/.*"job_id":"\([^"]*\)".*/\1/p')
+  echo "PASS: /generate-audio-job created job_id=$job_id"
+else
+  echo "FAIL: /generate-audio-job"
+  echo "Response: $job_payload"
+  exit 1
+fi
+
+echo
+echo "Frontend URL: $VERCEL_URL"
 if curl -s -I "$VERCEL_URL" | grep -q "200\|301\|302"; then
-  echo "✅ Frontend is accessible"
+  echo "PASS: frontend reachable"
 else
-  echo "❌ Frontend is not responding"
-  echo "   Make sure Vercel deployment is complete"
+  echo "FAIL: frontend not reachable"
+  exit 1
 fi
 
-echo ""
-echo "========================================"
-echo "Deployment Verification Complete!"
-echo ""
-echo "Next steps:"
-echo "1. Visit $VERCEL_URL in your browser"
-echo "2. Make sure VITE_API_URL environment variable is set to: $HF_API_URL"
-echo "3. Test uploading an image or entering text to generate a story"
+echo
+echo "Verification complete."
+echo "Next: open $VERCEL_URL and run one full story + audio test in browser."

@@ -1,103 +1,52 @@
-# Quick Deployment Checklist
+# Deployment Checklist
 
-## Pre-Deployment
+## Pre-Deploy
 
-- [ ] All code is committed and pushed to GitHub
-- [ ] API keys are ready:
-  - [ ] OpenAI API key
-  - [ ] HuggingFace token (optional)
-- [ ] Backend models are present in `hf-space/image_captioning/`
-  - [ ] `resnet50_attention_model.pth`
-  - [ ] `vocab.pt`
+- [ ] Latest code pushed to GitHub
+- [ ] RunPod endpoint created and healthy
+- [ ] OpenAI API key ready
 
-## Backend Deployment (HuggingFace Spaces)
+## RunPod (TTS)
 
-### Create Space
-- [ ] Created new Space on HuggingFace (Docker SDK)
-- [ ] Space name: `MagicNarrate`
-- [ ] Repository connected to GitHub
+- [ ] Queue-based endpoint created
+- [ ] Uses `runpod-worker/` Docker image build
+- [ ] Endpoint ID recorded
+- [ ] API key recorded
+- [ ] Min workers `0`, Max workers `1`
+- [ ] Container disk set to at least `20 GB`
 
-### Configure Environment
-In HF Space Settings → "Repository secrets":
-- [ ] `OPENAI_API_KEY` set
-- [ ] `HF_TOKEN` set (if needed)
+## HF Space (Backend)
 
-### Verify Deployment
-- [ ] Space shows "Running" status
-- [ ] No errors in build logs
-- [ ] Test endpoint: `curl https://your-username-MagicNarrate.hf.space/speakers`
-- [ ] Response shows available speakers
-- [ ] Note Space URL for next step
+- [ ] Space build passes
+- [ ] Secrets set:
+  - [ ] `OPENAI_API_KEY`
+  - [ ] `TTS_PROVIDER=runpod`
+  - [ ] `RUNPOD_API_KEY`
+  - [ ] `RUNPOD_ENDPOINT_ID`
+  - [ ] `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
+  - [ ] `AUDIO_JOB_TIMEOUT_SEC=420`
+- [ ] `GET /health` returns healthy
+- [ ] `POST /generate-audio-job` returns `job_id`
 
-## Frontend Deployment (Vercel)
+## Vercel (Frontend)
 
-### Create Project
-- [ ] Connected GitHub repository to Vercel
-- [ ] Selected root directory: `./`
-- [ ] Build command: `npm run build`
-- [ ] Output directory: `dist`
+- [ ] Env vars set:
+  - [ ] `VITE_API_URL=https://<your-space>.hf.space`
+  - [ ] `VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500`
+  - [ ] `VITE_AUDIO_JOB_TIMEOUT_MS=420000`
+- [ ] Frontend redeployed after env changes
+- [ ] Homepage loads with no console API errors
 
-### Configure Environment
-In Vercel Project Settings → "Environment Variables":
-- [ ] Name: `VITE_API_URL`
-- [ ] Value: `https://your-username-MagicNarrate.hf.space`
-- [ ] Applied to: Production, Preview, Development
+## End-to-End Validation
 
-### Verify Deployment
-- [ ] Vercel shows "Ready" status
-- [ ] Deployment URL is live (e.g., https://magicnarrate.vercel.app)
-- [ ] Open URL in browser - no errors
-- [ ] Custom domain configured (optional)
+- [ ] Text story generation works
+- [ ] Image story generation works
+- [ ] Audio job lifecycle works (`queued` -> `done`)
+- [ ] Audio playback works
+- [ ] Audio download works
 
-## Post-Deployment Testing
+## Final Sanity
 
-### Basic Functionality
-- [ ] Frontend loads without errors
-- [ ] Can select text input mode
-- [ ] Can select image input mode
-- [ ] Genre and tone dropdowns work
-- [ ] Speaker selection works
-
-### Text Input Test
-- [ ] Enter a prompt
-- [ ] Click "Generate Story"
-- [ ] Story text appears within 30 seconds
-- [ ] Audio generation starts
-- [ ] Audio plays successfully
-
-### Image Upload Test
-- [ ] Click image upload button
-- [ ] Select an image file
-- [ ] Image preview appears
-- [ ] Click "Generate Story"
-- [ ] Story text appears within 30 seconds
-- [ ] Audio generation and playback work
-
-### Audio Features
-- [ ] Can play/pause audio
-- [ ] Can skip forward/backward
-- [ ] Can download audio file
-- [ ] Downloaded file is a valid WAV
-
-## Monitoring & Support
-
-- [ ] Added monitoring alerts (optional)
-- [ ] Documented support contact
-- [ ] Shared deployment guide with team
-- [ ] Environment variables documented securely
-
-## Troubleshooting Resources
-
-If issues occur:
-1. Check [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed troubleshooting
-2. Review HuggingFace Space build logs
-3. Review Vercel deployment logs
-4. Check browser console (F12) for CORS errors
-5. Verify API keys are correct and active
-
----
-
-**Deployment Date**: ____________________
-**Deployer**: ____________________
-**Notes**: _________________________________
-
+- [ ] Run `./verify-deployment.sh <hf_api_url> <vercel_url>`
+- [ ] Keep one short warm-up request ready for demo sessions
+- [ ] If queue grows, temporarily raise max workers to `2`
