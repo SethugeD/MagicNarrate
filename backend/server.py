@@ -52,6 +52,7 @@ RUNPOD_ENDPOINT_ID = os.environ.get("RUNPOD_ENDPOINT_ID", "").strip()
 RUNPOD_BASE_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}" if RUNPOD_ENDPOINT_ID else ""
 RUNPOD_POLL_INTERVAL_SEC = float(os.environ.get("AUDIO_JOB_POLL_INTERVAL_SEC", "2.5"))
 AUDIO_JOB_TIMEOUT_SEC = int(os.environ.get("AUDIO_JOB_TIMEOUT_SEC", "420"))
+TTS_PROMPT_MAX_TOKENS = int(os.environ.get("TTS_PROMPT_MAX_TOKENS", "220"))
 
 AVAILABLE_SPEAKERS = ["Jon", "Lea", "Gary", "Jenna"]
 
@@ -129,6 +130,76 @@ def split_story(text: str, max_sentences: int = 2) -> list:
     return chunks
 
 
+def normalize_tts_text(text: str) -> str:
+    """Normalize whitespace and ensure the text ends with punctuation for stable chunking."""
+    clean_text = re.sub(r"\s+", " ", text or "").strip()
+    if not clean_text:
+        return ""
+    if clean_text[-1] not in ".!?":
+        clean_text += "."
+    return clean_text
+
+
+def split_sentences_strict(text: str) -> list[str]:
+    """Split text into single-sentence units and ensure each sentence ends with punctuation."""
+    if not text:
+        return []
+
+    sentences = [segment.strip() for segment in re.split(r"(?<=[.!?])\s+", text) if segment.strip()]
+    normalized = []
+    for sentence in sentences:
+        if sentence[-1] not in ".!?":
+            sentence += "."
+        normalized.append(sentence)
+    return normalized
+
+
+def split_by_token_budget(text: str, tokenizer: AutoTokenizer, max_tokens: int) -> list[str]:
+    """Split an oversized sentence by words so each segment fits the token budget."""
+    words = text.split()
+    if not words:
+        return []
+
+    chunks: list[str] = []
+    current: list[str] = []
+
+    for word in words:
+        candidate = " ".join(current + [word]).strip()
+        token_count = len(tokenizer(candidate, add_special_tokens=False, truncation=False).input_ids)
+        if current and token_count > max_tokens:
+            chunk = " ".join(current).strip()
+            if chunk and chunk[-1] not in ".!?":
+                chunk += "."
+            chunks.append(chunk)
+            current = [word]
+        else:
+            current.append(word)
+
+    final_chunk = " ".join(current).strip()
+    if final_chunk:
+        if final_chunk[-1] not in ".!?":
+            final_chunk += "."
+        chunks.append(final_chunk)
+
+    return chunks
+
+
+def build_tts_chunks(text: str, tokenizer: AutoTokenizer, max_tokens: int) -> list[str]:
+    """Create one-sentence chunks and fall back to token-budget splitting if needed."""
+    normalized_text = normalize_tts_text(text)
+    sentences = split_sentences_strict(normalized_text)
+    chunks: list[str] = []
+
+    for sentence in sentences:
+        token_count = len(tokenizer(sentence, add_special_tokens=False, truncation=False).input_ids)
+        if token_count <= max_tokens:
+            chunks.append(sentence)
+            continue
+        chunks.extend(split_by_token_budget(sentence, tokenizer, max_tokens))
+
+    return chunks
+
+
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
@@ -195,18 +266,24 @@ def generate_audio(story_text: str, emotion: str, speaker: str = "Lea"):
     input_ids = desc_tokens.input_ids.to(TTS_DEVICE)
     attention_mask = desc_tokens.attention_mask.to(TTS_DEVICE)
     
-    story_chunks = split_story(story_text, max_sentences=2)
+    story_chunks = build_tts_chunks(story_text, tts_tokenizer, TTS_PROMPT_MAX_TOKENS)
     all_audio = []
     
     set_seed(42)
     
     for idx, chunk in enumerate(story_chunks):
-        print(f"Generating audio for part {idx+1}/{len(story_chunks)}")
-        
+        prompt_token_len = len(tts_tokenizer(chunk, add_special_tokens=False, truncation=False).input_ids)
+        was_truncated = prompt_token_len > TTS_PROMPT_MAX_TOKENS
+        print(
+            f"[tts] chunk {idx + 1}/{len(story_chunks)} | tokens={prompt_token_len} | "
+            f"truncated={was_truncated} | text={chunk}"
+        )
+
         prompt_tokens = tts_tokenizer(
             chunk,
             return_tensors="pt",
-            truncation=True
+            truncation=True,
+            max_length=TTS_PROMPT_MAX_TOKENS,
         )
         prompt_input_ids = prompt_tokens.input_ids.to(TTS_DEVICE)
         prompt_attention_mask = prompt_tokens.attention_mask.to(TTS_DEVICE)
