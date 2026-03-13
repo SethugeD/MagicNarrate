@@ -9,6 +9,9 @@ interface SystemPageProps {
 
 type InputMode = 'text' | 'image';
 
+// Get API URL from environment or use default
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 function SystemPage({ onBackToHome }: SystemPageProps) {
   const [inputMode, setInputMode] = useState<InputMode>('text');
   const [textInput, setTextInput] = useState('');
@@ -25,7 +28,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [speakers, setSpeakers] = useState<string[]>(['Jon', 'Lea', 'Gary', 'Jenna']);
   const [selectedSpeaker, setSelectedSpeaker] = useState('Lea');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,14 +53,13 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       formData.append('tone', emotionTone);
       formData.append('speaker', selectedSpeaker);
       
-      let endpoint = 'http://localhost:8000';
+      let endpoint = `${API_URL}`;
       
       if (inputMode === 'text') {
         endpoint += '/generate-from-text';
         formData.append('prompt', textInput);
       } else {
         endpoint += '/generate';
-        // Convert base64 image to blob
         if (fileInputRef.current?.files?.[0]) {
           formData.append('image', fileInputRef.current.files[0]);
         } else {
@@ -87,7 +88,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       audioFormData.append('speaker', selectedSpeaker);
       
       try {
-        const audioResponse = await fetch('http://localhost:8000/generate-audio', {
+        const audioResponse = await fetch(`${API_URL}/generate-audio`, {
           method: 'POST',
           body: audioFormData,
         });
@@ -133,9 +134,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
   useEffect(() => {
     return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -145,7 +143,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   useEffect(() => {
     const fetchSpeakers = async () => {
       try {
-        const response = await fetch('http://localhost:8000/speakers');
+        const response = await fetch(`${API_URL}/speakers`);
         if (!response.ok) return;
 
         const data = await response.json();
