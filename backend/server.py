@@ -289,6 +289,31 @@ def _status_message(status: str) -> str:
     }.get(status, "Processing")
 
 
+def _compose_progress_message(job: dict[str, Any], status: str, payload: dict[str, Any] | None = None) -> str:
+    if status == "queued":
+        queue_position = None
+        if isinstance(payload, dict):
+            queue_position = payload.get("queuePosition") or payload.get("queue_position")
+        if queue_position is not None:
+            return f"Queued on GPU (position {queue_position})"
+
+        expected_chunks = int(job.get("expected_chunks", 0) or 0)
+        if expected_chunks > 0:
+            return f"Queued on GPU (story split into {expected_chunks} chunks)"
+        return _status_message("queued")
+
+    if status == "running":
+        expected_chunks = int(job.get("expected_chunks", 0) or 0)
+        if expected_chunks <= 0:
+            return _status_message("running")
+
+        running_polls = int(job.get("running_polls", 0) or 0)
+        current_chunk = max(1, min(expected_chunks, running_polls))
+        return f"Generating audio: chunk {current_chunk}/{expected_chunks} (estimated)"
+
+    return _status_message(status)
+
+
 def _map_runpod_status(raw_status: str) -> str:
     status = (raw_status or "").upper()
     if status in {"IN_QUEUE", "QUEUED"}:
@@ -338,7 +363,9 @@ async def _refresh_runpod_job(job: dict[str, Any]) -> None:
 
     mapped_status = _map_runpod_status(payload.get("status", "IN_PROGRESS"))
     job["status"] = mapped_status
-    job["progress_message"] = _status_message(mapped_status)
+    if mapped_status == "running":
+        job["running_polls"] = int(job.get("running_polls", 0) or 0) + 1
+    job["progress_message"] = _compose_progress_message(job, mapped_status, payload)
 
     if mapped_status == "done":
         audio, duration, error = _extract_runpod_output(payload)
@@ -461,6 +488,8 @@ async def create_audio_job(
         "progress_message": _status_message("queued"),
         "provider": TTS_PROVIDER,
         "provider_job_id": None,
+        "expected_chunks": len(split_story(story, max_sentences=2)),
+        "running_polls": 0,
         "created_at": created_at,
         "completed_at": None,
         "audio": "",
@@ -488,6 +517,7 @@ async def create_audio_job(
         "provider": job["provider"],
         "progress_message": job["progress_message"],
         "created_at": job["created_at"],
+        "expected_chunks": job["expected_chunks"],
     }
 
 
@@ -519,6 +549,8 @@ async def get_audio_job(job_id: str):
         "status": job["status"],
         "provider": job["provider"],
         "progress_message": job["progress_message"],
+        "expected_chunks": job["expected_chunks"],
+        "running_polls": job["running_polls"],
         "audio": job["audio"],
         "duration": job["duration"],
         "error": job["error"],
