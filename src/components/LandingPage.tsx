@@ -91,6 +91,17 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
           </button>
         </div>
+
+        <footer className="mt-12 text-center text-sm text-gray-600">
+          <a
+            href="https://github.com/SethugeD/MagicNarrate"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-purple-300 hover:text-purple-700"
+          >
+            View Project Repository
+          </a>
+        </footer>
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/20 to-transparent" />
