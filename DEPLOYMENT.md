@@ -52,6 +52,7 @@ Set these HF Space secrets:
 - `RUNPOD_ENDPOINT_ID`
 - `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
 - `AUDIO_JOB_TIMEOUT_SEC=420`
+- `TTS_PROMPT_MAX_TOKENS=220` (optional, for long-sentence stability)
 
 Deploy and verify:
 

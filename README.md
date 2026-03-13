@@ -96,6 +96,7 @@ RUNPOD_API_KEY=your_runpod_api_key
 RUNPOD_ENDPOINT_ID=your_runpod_endpoint_id
 AUDIO_JOB_POLL_INTERVAL_SEC=2.5
 AUDIO_JOB_TIMEOUT_SEC=420
+TTS_PROMPT_MAX_TOKENS=220
 ```
 
 `TTS_PROVIDER` behavior:
@@ -179,3 +180,4 @@ For `hf-space/image_captioning/`:
 - Set environment variables in each platform dashboard:
 	- Vercel: `VITE_API_URL`, `VITE_AUDIO_JOB_POLL_INTERVAL_MS`, `VITE_AUDIO_JOB_TIMEOUT_MS`
 	- HuggingFace Space Secrets: `OPENAI_API_KEY`, `TTS_PROVIDER`, `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `AUDIO_JOB_POLL_INTERVAL_SEC`, `AUDIO_JOB_TIMEOUT_SEC`
+	- Optional TTS stability tuning: `TTS_PROMPT_MAX_TOKENS` (default `220`)
