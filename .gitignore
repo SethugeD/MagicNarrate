@@ -51,3 +51,6 @@ eggs/
 # Model files (too large for GitHub, download separately)
 backend/image_captioning/*.pt
 backend/image_captioning/*.pth
+
+# Nested repo managed separately
+hf-space/
