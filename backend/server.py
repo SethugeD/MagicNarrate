@@ -373,10 +373,6 @@ def _compose_progress_message(job: dict[str, Any], status: str, payload: dict[st
             queue_position = payload.get("queuePosition") or payload.get("queue_position")
         if queue_position is not None:
             return f"Queued on GPU (position {queue_position})"
-
-        expected_chunks = int(job.get("expected_chunks", 0) or 0)
-        if expected_chunks > 0:
-            return f"Queued on GPU (story split into {expected_chunks} chunks)"
         return _status_message("queued")
 
     if status == "running":
