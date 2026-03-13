@@ -9,8 +9,12 @@ interface SystemPageProps {
 
 type InputMode = 'text' | 'image';
 
-// Get API URL from environment or use default
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use localhost only during local development. In production, use HF Space fallback.
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:8000'
+    : 'https://damz25-magic-narrate.hf.space');
 
 function SystemPage({ onBackToHome }: SystemPageProps) {
   const [inputMode, setInputMode] = useState<InputMode>('text');
