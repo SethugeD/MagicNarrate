@@ -4,6 +4,7 @@ interface StoryResultSectionProps {
   generatedStory: string;
   isPlaying: boolean;
   isGeneratingAudio: boolean;
+  audioStatusMessage: string;
   progress: number;
   duration: number;
   selectedSpeaker: string;
@@ -20,6 +21,7 @@ export default function StoryResultSection({
   generatedStory,
   isPlaying,
   isGeneratingAudio,
+  audioStatusMessage,
   progress,
   duration,
   selectedSpeaker,
@@ -64,7 +66,7 @@ export default function StoryResultSection({
               <span className="text-sm text-gray-500">• Voice: {selectedSpeaker}</span>
               {isGeneratingAudio && (
                 <span className="text-sm text-purple-600 font-semibold animate-pulse">
-                  Generating audio...
+                  {audioStatusMessage || 'Generating audio...'}
                 </span>
               )}
             </div>
@@ -75,7 +77,7 @@ export default function StoryResultSection({
                   <div className="inline-block">
                     <Sparkles className="w-8 h-8 text-purple-500 animate-spin" />
                   </div>
-                  <p className="text-gray-600 mt-3 font-medium">Generating audio narration...</p>
+                  <p className="text-gray-600 mt-3 font-medium">{audioStatusMessage || 'Generating audio narration...'}</p>
                 </div>
               </div>
             ) : (

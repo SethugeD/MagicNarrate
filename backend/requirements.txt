@@ -10,3 +10,4 @@ parler-tts
 soundfile
 numpy
 python-dotenv
+httpx

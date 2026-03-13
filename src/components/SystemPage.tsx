@@ -16,6 +16,9 @@ const API_URL =
     ? 'http://localhost:8000'
     : 'https://damz25-magic-narrate.hf.space');
 
+const AUDIO_JOB_POLL_INTERVAL_MS = Number(import.meta.env.VITE_AUDIO_JOB_POLL_INTERVAL_MS || 2500);
+const AUDIO_JOB_TIMEOUT_MS = Number(import.meta.env.VITE_AUDIO_JOB_TIMEOUT_MS || 420000);
+
 function SystemPage({ onBackToHome }: SystemPageProps) {
   const [inputMode, setInputMode] = useState<InputMode>('text');
   const [textInput, setTextInput] = useState('');
@@ -29,6 +32,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioSrc, setAudioSrc] = useState<string>('');
+  const [audioJobId, setAudioJobId] = useState('');
+  const [audioStatusMessage, setAudioStatusMessage] = useState('');
   const [speakers, setSpeakers] = useState<string[]>(['Jon', 'Lea', 'Gary', 'Jenna']);
   const [selectedSpeaker, setSelectedSpeaker] = useState('Lea');
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -49,6 +54,10 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     setIsGenerating(true);
     setGeneratedStory('');
     setAudioSrc('');
+    setAudioJobId('');
+    setAudioStatusMessage('');
+    setDuration(0);
+    setProgress(0);
     setIsGeneratingAudio(false);
     
     try {
@@ -85,28 +94,29 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       setIsGenerating(false);
       
       setIsGeneratingAudio(true);
+      setAudioStatusMessage('Queueing audio job...');
       
       const audioFormData = new FormData();
       audioFormData.append('story', data.story);
       audioFormData.append('tone', emotionTone);
       audioFormData.append('speaker', selectedSpeaker);
       
-      try {
-        const audioResponse = await fetch(`${API_URL}/generate-audio`, {
-          method: 'POST',
-          body: audioFormData,
-        });
-        
-        if (!audioResponse.ok) {
-          throw new Error('Failed to generate audio');
-        }
-        
-        const audioData = await audioResponse.json();
-        setAudioSrc(audioData.audio);
-        setDuration(audioData.duration);
-      } finally {
-        setIsGeneratingAudio(false);
+      const audioResponse = await fetch(`${API_URL}/generate-audio-job`, {
+        method: 'POST',
+        body: audioFormData,
+      });
+
+      if (!audioResponse.ok) {
+        throw new Error('Failed to create audio job');
       }
+
+      const audioData = await audioResponse.json();
+      if (!audioData.job_id) {
+        throw new Error('Audio job id was not returned by the backend');
+      }
+
+      setAudioJobId(audioData.job_id);
+      setAudioStatusMessage(audioData.progress_message || 'Queued on GPU');
       
     } catch (error) {
       console.error('Error generating story:', error);
@@ -135,6 +145,69 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       alert('Failed to download audio. Please try again.');
     }
   };
+
+  useEffect(() => {
+    if (!audioJobId || !isGeneratingAudio) {
+      return;
+    }
+
+    let isCancelled = false;
+    const startedAt = Date.now();
+
+    const pollAudioJob = async () => {
+      if (isCancelled) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/generate-audio-job/${audioJobId}`);
+        if (!response.ok) {
+          throw new Error('Failed to check audio generation status');
+        }
+
+        const data = await response.json();
+        if (isCancelled) {
+          return;
+        }
+
+        setAudioStatusMessage(data.progress_message || 'Generating audio...');
+
+        if (data.status === 'done') {
+          setAudioSrc(data.audio || '');
+          setDuration(Number(data.duration || 0));
+          setAudioJobId('');
+          setIsGeneratingAudio(false);
+          setAudioStatusMessage('');
+          return;
+        }
+
+        if (data.status === 'failed') {
+          throw new Error(data.error || 'Audio generation failed');
+        }
+
+        if (Date.now() - startedAt > AUDIO_JOB_TIMEOUT_MS) {
+          throw new Error('Audio generation timed out. Please try again.');
+        }
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+        console.error('Error polling audio job:', error);
+        alert(error instanceof Error ? error.message : 'Audio generation failed. Please try again.');
+        setAudioJobId('');
+        setIsGeneratingAudio(false);
+        setAudioStatusMessage('');
+      }
+    };
+
+    pollAudioJob();
+    const intervalId = window.setInterval(pollAudioJob, AUDIO_JOB_POLL_INTERVAL_MS);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [audioJobId, isGeneratingAudio]);
 
   useEffect(() => {
     return () => {
@@ -430,6 +503,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                 generatedStory={generatedStory}
                 isPlaying={isPlaying}
                 isGeneratingAudio={isGeneratingAudio}
+                audioStatusMessage={audioStatusMessage}
                 progress={progress}
                 duration={duration}
                 selectedSpeaker={selectedSpeaker}
