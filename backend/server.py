@@ -1,6 +1,7 @@
 import os
 import io
 import re
+import json
 import uuid
 import time
 import asyncio
@@ -191,38 +192,138 @@ def build_tts_chunks(text: str, tokenizer: AutoTokenizer, max_tokens: int) -> li
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+STORY_MIN_WORDS = 80
+STORY_MAX_WORDS = 100
+STORY_HARD_MAX_WORDS = 120
+
+
+def sanitize_story_text_for_tts(text: str) -> str:
+    """Sanitize generated story text for stable, natural TTS narration."""
+    clean_text = (text or "").strip()
+    if not clean_text:
+        return ""
+
+    # Remove markdown and list-like prefixes that sound unnatural when spoken.
+    clean_text = re.sub(r"^\s{0,3}(?:#{1,6}\s+|[-*+]\s+|\d+[.)]\s+)", "", clean_text, flags=re.MULTILINE)
+
+    # Remove bracketed asides and parenthetical notes.
+    clean_text = re.sub(r"\[[^\]]*\]", "", clean_text)
+    clean_text = re.sub(r"\([^)]*\)", "", clean_text)
+
+    # Strip wrapping quote marks and normalize punctuation.
+    clean_text = clean_text.strip('"\'“”‘’')
+    clean_text = re.sub(r"([!?.,])\1{1,}", r"\1", clean_text)
+
+    clean_text = re.sub(r"\s+", " ", clean_text).strip()
+    if clean_text and clean_text[-1] not in ".!?":
+        clean_text += "."
+    return clean_text
+
+
+def clamp_story_word_count(text: str, max_words: int) -> str:
+    """Clamp text to max words while ending at sentence boundaries when possible."""
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+
+    cutoff_text = " ".join(words[:max_words]).strip()
+    sentence_parts = re.split(r"(?<=[.!?])\s+", cutoff_text)
+    if len(sentence_parts) > 1:
+        cutoff_text = " ".join(sentence_parts[:-1]).strip() or cutoff_text
+
+    if cutoff_text and cutoff_text[-1] not in ".!?":
+        cutoff_text += "."
+    return cutoff_text
+
+
+def parse_story_from_json(raw_text: str) -> str:
+    """Extract story text from a strict JSON response, with a safe fallback."""
+    raw_text = (raw_text or "").strip()
+    if not raw_text:
+        return ""
+
+    try:
+        parsed = json.loads(raw_text)
+        if isinstance(parsed, dict):
+            story = parsed.get("story", "")
+            return str(story).strip()
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: attempt to parse first JSON object inside mixed output.
+    match = re.search(r"\{.*\}", raw_text, flags=re.DOTALL)
+    if match:
+        try:
+            parsed = json.loads(match.group(0))
+            if isinstance(parsed, dict):
+                story = parsed.get("story", "")
+                return str(story).strip()
+        except json.JSONDecodeError:
+            pass
+
+    return raw_text
+
 
 def generate_story_text(emotion: str, genre: str, sentence: str) -> str:
-    """Generate story using OpenAI API with the improved prompt"""
-    prompt = f"""
-You are a creative children's storyteller.
-
+    """Generate a TTS-friendly story with strict output formatting."""
+    system_prompt = (
+        "You are a creative children's storyteller. "
+        "Return only valid JSON with exactly one key: story. "
+        "The story must be plain text only, with no markdown, no lists, no headings, no stage directions, and no notes. "
+        "Use calm, natural narration suitable for text-to-speech."
+    )
+    user_prompt = f"""
 Emotion: {emotion}
 Genre: {genre}
 
 Task:
-Create a short story (80–100 words) suitable for children.
-The story must strongly reflect the given emotion through:
-- word choice
-- sentence rhythm
-- atmosphere
-- character reactions
+Create a short story for children in 80-100 words.
+The story must strongly reflect the emotion through word choice, sentence rhythm, atmosphere, and character reactions.
 
-IMPORTANT RULES:
-- Do NOT use sound effects or onomatopoeia
-- Avoid exaggerated punctuation (!!!, ???)
-- Use calm, natural narrative sentences suitable for text-to-speech systems
+Rules:
+- No onomatopoeia or sound effects
+- No exaggerated punctuation
+- No markdown or special formatting
+- Keep sentence length short to medium for narration clarity
+- End on an emotionally meaningful note
 
 Starting idea:
 "{sentence}"
 
-End the story on an emotionally meaningful note.
+Output format:
+{{"story":"..."}}
 """
     response = client.chat.completions.create(
         model="gpt-5",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
     )
-    return response.choices[0].message.content
+    raw_content = response.choices[0].message.content or ""
+    story_text = parse_story_from_json(raw_content)
+    story_text = sanitize_story_text_for_tts(story_text)
+
+    word_count = len(story_text.split())
+    if word_count < STORY_MIN_WORDS or word_count > STORY_MAX_WORDS:
+        rewrite_prompt = (
+            f"Rewrite this story to be between {STORY_MIN_WORDS}-{STORY_MAX_WORDS} words, "
+            "preserve meaning and tone, and return JSON only as {\"story\":\"...\"}.\n\n"
+            f"Story:\n{story_text}"
+        )
+        rewrite_response = client.chat.completions.create(
+            model="gpt-5",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": rewrite_prompt},
+            ],
+        )
+        rewritten_raw = rewrite_response.choices[0].message.content or ""
+        rewritten_story = parse_story_from_json(rewritten_raw)
+        story_text = sanitize_story_text_for_tts(rewritten_story) or story_text
+
+    story_text = clamp_story_word_count(story_text, STORY_HARD_MAX_WORDS)
+    return story_text
 
 
 TONE_TO_EMOTION = {
