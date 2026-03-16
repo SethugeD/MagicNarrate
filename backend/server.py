@@ -236,6 +236,14 @@ def clamp_story_word_count(text: str, max_words: int) -> str:
     return cutoff_text
 
 
+def ensure_story_starts_capitalized(text: str) -> str:
+    """Uppercase the first alphabetic character so the story starts cleanly."""
+    for index, char in enumerate(text):
+        if char.isalpha():
+            return text[:index] + char.upper() + text[index + 1:]
+    return text
+
+
 def parse_story_from_json(raw_text: str) -> str:
     """Extract story text from a strict JSON response, with a safe fallback."""
     raw_text = (raw_text or "").strip()
@@ -323,6 +331,7 @@ Output format:
         story_text = sanitize_story_text_for_tts(rewritten_story) or story_text
 
     story_text = clamp_story_word_count(story_text, STORY_HARD_MAX_WORDS)
+    story_text = ensure_story_starts_capitalized(story_text)
     return story_text
 
 
