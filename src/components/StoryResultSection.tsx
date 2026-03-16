@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { Sparkles, Volume2, Play, Pause, SkipBack, SkipForward, RotateCcw, Download, Wand2 } from 'lucide-react';
 
 interface StoryResultSectionProps {
@@ -12,6 +13,7 @@ interface StoryResultSectionProps {
   onSkipBackward: () => void;
   onSkipForward: () => void;
   onStop: () => void;
+  hasAudio: boolean;
   onStoryChange: (story: string) => void;
   onRegenerateAudio: () => void;
   onDownload: () => void;
@@ -31,15 +33,25 @@ export default function StoryResultSection({
   onSkipBackward,
   onSkipForward,
   onStop,
+  hasAudio,
   onStoryChange,
   onRegenerateAudio,
   onDownload,
   onSeek,
   formatTime,
 }: StoryResultSectionProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [generatedStory]);
+
   return (
     <div className="space-y-6">
-      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 flex flex-col" style={{ height: 'fit-content', minHeight: '600px' }}>
+      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-pink-500" />
@@ -48,15 +60,17 @@ export default function StoryResultSection({
         </div>
 
         {generatedStory ? (
-          <div className="flex-1 overflow-y-auto mb-8">
+          <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               {isGeneratingAudio ? 'Your Story' : 'Edit story text, then regenerate audio below'}
             </label>
             <textarea
+              ref={textareaRef}
               value={generatedStory}
               onChange={(e) => onStoryChange(e.target.value)}
               readOnly={isGeneratingAudio}
-              className={`w-full min-h-[220px] text-lg text-gray-700 leading-relaxed whitespace-pre-wrap p-4 rounded-2xl border-2 transition-colors resize-y focus:outline-none ${
+              rows={1}
+              className={`w-full text-lg text-gray-700 leading-relaxed p-4 rounded-2xl border-2 transition-colors resize-none overflow-hidden focus:outline-none text-justify ${
                 isGeneratingAudio
                   ? 'border-purple-100 bg-gray-50 text-gray-500 cursor-not-allowed'
                   : 'border-purple-100 focus:border-purple-300 bg-white'
@@ -94,16 +108,8 @@ export default function StoryResultSection({
                   <p className="text-gray-600 mt-3 font-medium">{audioStatusMessage || 'Generating audio narration...'}</p>
                 </div>
               </div>
-            ) : (
+            ) : hasAudio ? (
               <>
-                <button
-                  onClick={onRegenerateAudio}
-                  disabled={!generatedStory.trim()}
-                  className="w-full mb-3 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Regenerate Audio From Edited Story
-                </button>
-
                 <div className="mb-6">
                   <input
                     type="range"
@@ -169,8 +175,17 @@ export default function StoryResultSection({
                   <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
                   Download Audio
                 </button>
+
+                <button
+                  onClick={onRegenerateAudio}
+                  disabled={!generatedStory.trim()}
+                  className="w-full mt-3 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Regenerate Audio From Edited Story
+                </button>
               </>
-            )}
+            ) : null}
           </div>
         )}
       </div>

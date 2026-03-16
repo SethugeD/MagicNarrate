@@ -544,7 +544,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
             <button
               onClick={handleGenerateStory}
-              disabled={isGenerating || (!textInput && !imagePreview)}
+              disabled={isGenerating || isGeneratingAudio || (!textInput && !imagePreview)}
               className="w-full py-4 sm:py-5 px-6 sm:px-8 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white text-base sm:text-lg font-bold rounded-full shadow-2xl hover:shadow-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 flex items-center justify-center gap-2 sm:gap-3 group"
             >
               {isGenerating ? (
@@ -572,6 +572,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                 progress={progress}
                 duration={duration}
                 selectedSpeaker={selectedSpeaker}
+                hasAudio={!!audioSrc}
                 onPlayPause={handlePlayPause}
                 onSkipBackward={handleSkipBackward}
                 onSkipForward={handleSkipForward}

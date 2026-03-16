@@ -16,7 +16,8 @@ MagicNarrate is an AI-powered storytelling app that turns image or text prompts 
 - Text-to-story generation
 - Genre and emotion-tone controls
 - Multiple speaker voices (Jon, Lea, Gary, Jenna)
-- Audio playback controls and WAV download
+- Audio playback with seek, skip, replay controls and WAV download
+- Editable story text with one-click audio regeneration
 
 ## Tech Stack
 
