@@ -51,7 +51,7 @@ export default function StoryResultSection({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8">
+      <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 min-h-[440px] lg:min-h-[560px] flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-pink-500" />
@@ -61,9 +61,11 @@ export default function StoryResultSection({
 
         {generatedStory ? (
           <div className="mb-8">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              {isGeneratingAudio ? 'Your Story' : 'Edit story text, then regenerate audio below'}
-            </label>
+            {hasAudio && (
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Edit story text, then regenerate audio below
+              </label>
+            )}
             <textarea
               ref={textareaRef}
               value={generatedStory}
