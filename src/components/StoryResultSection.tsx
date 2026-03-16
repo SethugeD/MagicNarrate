@@ -12,6 +12,8 @@ interface StoryResultSectionProps {
   onSkipBackward: () => void;
   onSkipForward: () => void;
   onStop: () => void;
+  onStoryChange: (story: string) => void;
+  onRegenerateAudio: () => void;
   onDownload: () => void;
   onSeek: (e: React.ChangeEvent<HTMLInputElement>) => void;
   formatTime: (seconds: number) => string;
@@ -29,6 +31,8 @@ export default function StoryResultSection({
   onSkipBackward,
   onSkipForward,
   onStop,
+  onStoryChange,
+  onRegenerateAudio,
   onDownload,
   onSeek,
   formatTime,
@@ -45,9 +49,19 @@ export default function StoryResultSection({
 
         {generatedStory ? (
           <div className="flex-1 overflow-y-auto mb-8">
-            <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {generatedStory}
-            </p>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              {isGeneratingAudio ? 'Your Story' : 'Edit story text, then regenerate audio below'}
+            </label>
+            <textarea
+              value={generatedStory}
+              onChange={(e) => onStoryChange(e.target.value)}
+              readOnly={isGeneratingAudio}
+              className={`w-full min-h-[220px] text-lg text-gray-700 leading-relaxed whitespace-pre-wrap p-4 rounded-2xl border-2 transition-colors resize-y focus:outline-none ${
+                isGeneratingAudio
+                  ? 'border-purple-100 bg-gray-50 text-gray-500 cursor-not-allowed'
+                  : 'border-purple-100 focus:border-purple-300 bg-white'
+              }`}
+            />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400">
@@ -82,6 +96,14 @@ export default function StoryResultSection({
               </div>
             ) : (
               <>
+                <button
+                  onClick={onRegenerateAudio}
+                  disabled={!generatedStory.trim()}
+                  className="w-full mb-3 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full font-semibold hover:scale-105 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Regenerate Audio From Edited Story
+                </button>
+
                 <div className="mb-6">
                   <input
                     type="range"

@@ -93,14 +93,14 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       setGeneratedStory(data.story);
       setIsGenerating(false);
       
-      setIsGeneratingAudio(true);
-      setAudioStatusMessage('Queueing audio job...');
-      
       const audioFormData = new FormData();
       audioFormData.append('story', data.story);
       audioFormData.append('tone', emotionTone);
       audioFormData.append('speaker', selectedSpeaker);
       
+      setIsGeneratingAudio(true);
+      setAudioStatusMessage('Queueing audio job...');
+
       const audioResponse = await fetch(`${API_URL}/generate-audio-job`, {
         method: 'POST',
         body: audioFormData,
@@ -123,6 +123,57 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       alert('Failed to generate story. Make sure the backend is running.');
       setIsGenerating(false);
       setIsGeneratingAudio(false);
+    }
+  };
+
+  const handleRegenerateAudio = async () => {
+    const storyText = generatedStory.trim();
+    if (!storyText) {
+      alert('Please enter a story before regenerating audio.');
+      return;
+    }
+
+    setAudioSrc('');
+    setAudioJobId('');
+    setAudioStatusMessage('Queueing audio job...');
+    setDuration(0);
+    setProgress(0);
+    setIsPlaying(false);
+    setIsGeneratingAudio(true);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    try {
+      const audioFormData = new FormData();
+      audioFormData.append('story', storyText);
+      audioFormData.append('tone', emotionTone);
+      audioFormData.append('speaker', selectedSpeaker);
+
+      const audioResponse = await fetch(`${API_URL}/generate-audio-job`, {
+        method: 'POST',
+        body: audioFormData,
+      });
+
+      if (!audioResponse.ok) {
+        throw new Error('Failed to create audio job');
+      }
+
+      const audioData = await audioResponse.json();
+      if (!audioData.job_id) {
+        throw new Error('Audio job id was not returned by the backend');
+      }
+
+      setAudioJobId(audioData.job_id);
+      setAudioStatusMessage(audioData.progress_message || 'Queued on GPU');
+    } catch (error) {
+      console.error('Error regenerating audio:', error);
+      alert('Failed to regenerate audio. Please try again.');
+      setAudioJobId('');
+      setIsGeneratingAudio(false);
+      setAudioStatusMessage('');
     }
   };
 
@@ -291,6 +342,10 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     if (audioRef.current) {
       audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 5, 0);
     }
+  };
+
+  const handleStoryChange = (story: string) => {
+    setGeneratedStory(story);
   };
 
   const formatTime = (seconds: number): string => {
@@ -521,6 +576,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                 onSkipBackward={handleSkipBackward}
                 onSkipForward={handleSkipForward}
                 onStop={handleStop}
+                onStoryChange={handleStoryChange}
+                onRegenerateAudio={handleRegenerateAudio}
                 onDownload={handleDownloadAudio}
                 onSeek={handleSeek}
                 formatTime={formatTime}
