@@ -249,18 +249,23 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => console.error('Playback failed:', err));
     }
   };
 
   const handleStop = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    setIsPlaying(false);
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
     setProgress(0);
+    audioRef.current.play()
+      .then(() => setIsPlaying(true))
+      .catch((err) => {
+        setIsPlaying(false);
+        console.error('Replay failed:', err);
+      });
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,6 +273,11 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     setProgress(newProgress);
     if (audioRef.current && duration > 0) {
       audioRef.current.currentTime = newProgress * duration;
+      if (!isPlaying) {
+        audioRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch((err) => console.error('Playback failed:', err));
+      }
     }
   };
 
