@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { Home, ImagePlus, Type, Wand2, Sparkles } from 'lucide-react';
+import { Home, ImagePlus, Type, Wand2, Sparkles, ChevronDown } from 'lucide-react';
 
 const StoryResultSection = lazy(() => import('./StoryResultSection'));
 
@@ -23,6 +23,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const [inputMode, setInputMode] = useState<InputMode>('text');
   const [textInput, setTextInput] = useState('');
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [genre, setGenre] = useState('adventure');
   const [emotionTone, setEmotionTone] = useState('calm');
   const [generatedStory, setGeneratedStory] = useState('');
@@ -39,15 +41,38 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const processImageFile = (file: File) => {
+    setSelectedImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile && droppedFile.type.startsWith('image/')) {
+      processImageFile(droppedFile);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
   };
 
   const handleGenerateStory = async () => {
@@ -73,8 +98,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
         formData.append('prompt', textInput);
       } else {
         endpoint += '/generate';
-        if (fileInputRef.current?.files?.[0]) {
-          formData.append('image', fileInputRef.current.files[0]);
+        if (selectedImageFile) {
+          formData.append('image', selectedImageFile);
         } else {
           throw new Error('Please select an image');
         }
@@ -261,9 +286,10 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
   }, [audioJobId, isGeneratingAudio]);
 
   useEffect(() => {
+    const audioElement = audioRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (audioElement) {
+        audioElement.pause();
       }
     };
   }, []);
@@ -279,7 +305,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           setSpeakers(data.speakers);
           setSelectedSpeaker((prev) => (data.speakers.includes(prev) ? prev : data.speakers[0]));
         }
-      } catch (error) {
+      } catch {
+        // Keep default local speakers when the backend list is unavailable.
       }
     };
 
@@ -459,7 +486,14 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                     />
                     <label
                       htmlFor="image-upload"
-                      className="flex flex-col items-center justify-center h-32 sm:h-40 border-2 border-dashed border-purple-300 rounded-2xl cursor-pointer hover:border-purple-400 transition-all hover:bg-purple-50"
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      className={`flex flex-col items-center justify-center h-32 sm:h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
+                        isDragOver
+                          ? 'border-purple-500 bg-purple-100'
+                          : 'border-purple-300 hover:border-purple-400 hover:bg-purple-50'
+                      }`}
                     >
                       {imagePreview ? (
                         <img
@@ -471,7 +505,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                         <>
                           <ImagePlus className="w-8 h-8 sm:w-12 sm:h-12 text-purple-400 mb-2" />
                           <span className="text-xs sm:text-base text-gray-600 font-medium">
-                            Click to upload
+                            Click to upload or drag and drop
                           </span>
                         </>
                       )}
@@ -485,14 +519,14 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
               <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Story Settings</h3>
 
               <div className="space-y-6">
-                <div>
+                <div className="relative">
                   <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Genre
                   </label>
                   <select
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
+                    className="w-full p-3 sm:p-4 pr-11 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white appearance-none"
                   >
                     <option value="adventure">🗺️ Adventure</option>
                     <option value="fantasy">✨ Fantasy</option>
@@ -501,16 +535,19 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                     <option value="learning">🔬 Learning</option>
                     <option value="confidence">💪 Confidence</option>
                   </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center pt-7">
+                    <ChevronDown className="h-4 w-4 text-purple-500" />
+                  </div>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Emotion Tone
                   </label>
                   <select
                     value={emotionTone}
                     onChange={(e) => setEmotionTone(e.target.value)}
-                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
+                    className="w-full p-3 sm:p-4 pr-11 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white appearance-none"
                   >
                     <option value="joyful">😊 Joyful</option>
                     <option value="funny">😄 Funny</option>
@@ -520,16 +557,19 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                     <option value="confused">😕 Confused</option>
                     <option value="dramatic">🎭 Dramatic</option>
                   </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center pt-7">
+                    <ChevronDown className="h-4 w-4 text-purple-500" />
+                  </div>
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                     Speaker
                   </label>
                   <select
                     value={selectedSpeaker}
                     onChange={(e) => setSelectedSpeaker(e.target.value)}
-                    className="w-full p-3 sm:p-4 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white"
+                    className="w-full p-3 sm:p-4 pr-11 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm sm:text-base bg-white appearance-none"
                   >
                     {speakers.map((speaker) => (
                       <option key={speaker} value={speaker}>
@@ -537,6 +577,9 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                       </option>
                     ))}
                   </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center pt-7">
+                    <ChevronDown className="h-4 w-4 text-purple-500" />
+                  </div>
                 </div>
 
               </div>
