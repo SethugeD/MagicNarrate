@@ -1,6 +1,6 @@
-# MagicNarrate
+# MagicNarrate 🪄
 
-MagicNarrate is an AI storytelling app that converts image or text prompts into children's stories, then narrates them with selectable voices.
+MagicNarrate is an emotion-aware AI storytelling app that converts image or text prompts into children's stories, then narrates them with selectable voices.
 
 ## Live Architecture
 
