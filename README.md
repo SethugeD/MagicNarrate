@@ -34,7 +34,7 @@ MagicNarrate is an emotion-aware AI storytelling app that converts image or text
 - PyTorch
 - torchvision
 - OpenAI Python SDK
-- Parler-TTS
+- Parler-TTS (model: parler-tts-mini-expresso)
 
 ## Repository Structure
 
@@ -115,6 +115,11 @@ TTS_PROMPT_MAX_TOKENS=220
 Model source:
 
 - Google Drive folder (also tracked in `models.txt`): https://drive.google.com/drive/folders/1H-rOG2pVmDHQMoA9pm8ZqDS1endTIYuV?usp=sharing
+
+Runtime TTS model source:
+
+- ParlerTTS mini expresso: https://huggingface.co/parler-tts/parler-tts-mini-expresso
+- This model is loaded from Hugging Face at runtime (not copied into the Drive artifact bundle).
 
 Required files for `backend/image_captioning/`:
 
