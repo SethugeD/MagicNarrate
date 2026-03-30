@@ -108,6 +108,9 @@ TTS_PROMPT_MAX_TOKENS=220
 
 Required files for backend inference:
 
+Model download source:
+- Google Drive folder (also tracked in `models.txt`): https://drive.google.com/drive/folders/1H-rOG2pVmDHQMoA9pm8ZqDS1endTIYuV?usp=sharing
+
 For `backend/image_captioning/`:
 - `resnet50_attention_model.pth`
 - `resnet50_features.pt`
@@ -116,6 +119,11 @@ For `backend/image_captioning/`:
 For `hf-space/image_captioning/`:
 - `resnet50_attention_model.pth`
 - `vocab.pt`
+
+Quick setup:
+1. Download the model artifacts from the Google Drive folder above.
+2. Put all three files in `backend/image_captioning/` for local development.
+3. Put `resnet50_attention_model.pth` and `vocab.pt` in `hf-space/image_captioning/` for Space deployment.
 
 ## API Endpoints
 
