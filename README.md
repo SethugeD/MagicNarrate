@@ -1,12 +1,12 @@
-# MagicNarrate 🪄
+# MagicNarrate
 
-MagicNarrate is an AI-powered storytelling app that turns image or text prompts into children's stories, then narrates them with selectable voices.
+MagicNarrate is an AI storytelling app that converts image or text prompts into children's stories, then narrates them with selectable voices.
 
 ## Live Architecture
 
 - Frontend: Vercel (React + Vite)
-- Backend: HuggingFace Spaces (FastAPI + Docker)
-- Audio Inference: RunPod Serverless (optional, recommended for lower TTS latency)
+- Backend API: Hugging Face Spaces (FastAPI + Docker)
+- Audio Inference: RunPod Serverless (recommended in production)
 - Story generation: OpenAI API
 - Voice narration: Parler-TTS
 
@@ -14,31 +14,35 @@ MagicNarrate is an AI-powered storytelling app that turns image or text prompts 
 
 - Image-to-story generation
 - Text-to-story generation
-- Genre and emotion-tone controls
+- Genre and tone controls
 - Multiple speaker voices (Jon, Lea, Gary, Jenna)
-- Audio playback with seek, skip, replay controls and WAV download
+- Audio playback with seek, skip, replay, and WAV download
 - Editable story text with one-click audio regeneration
 
 ## Tech Stack
 
 ### Frontend
+
 - React
 - TypeScript
 - Vite
 - Tailwind CSS
 
 ### Backend
+
 - FastAPI
 - PyTorch
 - torchvision
 - OpenAI Python SDK
 - Parler-TTS
 
-## Project Structure
+## Repository Structure
 
-- `src/` frontend source code
-- `backend/` local backend for development
-- `hf-space/` deployed backend source for HuggingFace Space
+- `src/`: frontend app
+- `backend/`: local development backend
+- `hf-space/`: Hugging Face Space backend source
+- `runpod-worker/`: RunPod serverless worker
+- `models.txt`: model artifact source link and update metadata
 
 ## Local Development
 
@@ -81,18 +85,19 @@ VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500
 VITE_AUDIO_JOB_TIMEOUT_MS=420000
 ```
 
-For production (Vercel), set `VITE_API_URL` to your Space URL:
+For production (Vercel):
 
 ```env
-VITE_API_URL=https://damz25-magic-narrate.hf.space
+VITE_API_URL=https://<your-space>.hf.space
 ```
 
-### Backend (`backend/.env` locally, Space Secrets in production)
+### Backend (`backend/.env` locally, HF Space Secrets in production)
 
 ```env
 OPENAI_API_KEY=your_openai_api_key
 TTS_PROVIDER=local
-# When using RunPod, set TTS_PROVIDER=runpod and configure:
+
+# Required when using RunPod
 RUNPOD_API_KEY=your_runpod_api_key
 RUNPOD_ENDPOINT_ID=your_runpod_endpoint_id
 AUDIO_JOB_POLL_INTERVAL_SEC=2.5
@@ -100,93 +105,105 @@ AUDIO_JOB_TIMEOUT_SEC=420
 TTS_PROMPT_MAX_TOKENS=220
 ```
 
-`TTS_PROVIDER` behavior:
-- `local`: uses Parler-TTS directly in this backend process.
-- `runpod`: creates async jobs in RunPod Serverless and polls status until complete.
+`TTS_PROVIDER` modes:
+
+- `local`: generate audio in the backend process using Parler-TTS.
+- `runpod`: create async RunPod jobs and poll until completion.
 
 ## Model Files
 
-Required files for backend inference:
+Model source:
 
-Model download source:
 - Google Drive folder (also tracked in `models.txt`): https://drive.google.com/drive/folders/1H-rOG2pVmDHQMoA9pm8ZqDS1endTIYuV?usp=sharing
 
-For `backend/image_captioning/`:
+Required files for `backend/image_captioning/`:
+
 - `resnet50_attention_model.pth`
 - `resnet50_features.pt`
 - `vocab.pt`
 
-For `hf-space/image_captioning/`:
+Required files for `hf-space/image_captioning/`:
+
 - `resnet50_attention_model.pth`
 - `vocab.pt`
 
 Quick setup:
-1. Download the model artifacts from the Google Drive folder above.
-2. Put all three files in `backend/image_captioning/` for local development.
-3. Put `resnet50_attention_model.pth` and `vocab.pt` in `hf-space/image_captioning/` for Space deployment.
 
-## API Endpoints
-
-- `GET /` basic service info
-- `GET /health` health check
-- `GET /speakers` available speaker list
-- `POST /generate` generate story from uploaded image
-- `POST /generate-from-text` generate story from text prompt
-- `POST /generate-audio` synchronous local audio generation (legacy/fallback)
-- `POST /generate-audio-job` create async audio job
-- `GET /generate-audio-job/{job_id}` check audio job status and fetch result when done
-
-## RunPod Serverless Setup
-
-1. Create a RunPod account and generate an API key.
-2. Push this repository branch with the `runpod-worker/` folder to GitHub.
-3. Create a Serverless endpoint from GitHub with these values:
-
-- Repo: `SethugeD/MagicNarrate`
-- Branch: the branch containing `runpod-worker/`
-- Dockerfile Path: `/runpod-worker/Dockerfile`
-- Build Context: `/runpod-worker`
-- Endpoint Type: queue-based
-- Endpoint Name: `MagicNarrate-tts`
-
-4. If RunPod asks for handler validation, it should detect `runpod.serverless.start({"handler": handler})` from `runpod-worker/handler.py`.
-5. Make sure the worker accepts this input JSON shape:
-
-```json
-{
-	"input": {
-		"story": "string",
-		"tone": "joyful",
-		"speaker": "Lea"
-	}
-}
-```
-
-6. Make sure your worker output includes at least one of these fields:
-- `audio` (base64 or data URL)
-- `audio_base64`
-- `wav_base64`
-- `audio_url`
-
-7. Set backend env variables (`backend/.env` locally, HF Space Secrets in production):
-- `TTS_PROVIDER=runpod`
-- `RUNPOD_API_KEY=<your key>`
-- `RUNPOD_ENDPOINT_ID=<your endpoint id>`
-
-8. Restart backend and verify flow:
-- `POST /generate-audio-job`
-- `GET /generate-audio-job/{job_id}` until status is `done`
-
-## RunPod Notes
-
-- For occasional traffic, Serverless is the best default due to low idle cost.
-- If cold starts become painful, migrate only the TTS worker to a dedicated RunPod pod during active demo windows.
+1. Download artifacts from the Google Drive folder.
+2. Put all three files into `backend/image_captioning/` for local development.
+3. Put `resnet50_attention_model.pth` and `vocab.pt` into `hf-space/image_captioning/` for Space deployment.
 
 ## Deployment
 
-- Frontend deployment is configured for Vercel using `vercel.json`
-- Backend deployment is configured for HuggingFace Spaces using `hf-space/Dockerfile`
-- Set environment variables in each platform dashboard:
-	- Vercel: `VITE_API_URL`, `VITE_AUDIO_JOB_POLL_INTERVAL_MS`, `VITE_AUDIO_JOB_TIMEOUT_MS`
-	- HuggingFace Space Secrets: `OPENAI_API_KEY`, `TTS_PROVIDER`, `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `AUDIO_JOB_POLL_INTERVAL_SEC`, `AUDIO_JOB_TIMEOUT_SEC`
-	- Optional TTS stability tuning: `TTS_PROMPT_MAX_TOKENS` (default `220`)
+### Frontend (Vercel)
+
+- Uses `vercel.json` with Vite build output (`dist`).
+- Set environment variables:
+	- `VITE_API_URL=https://<your-space>.hf.space`
+	- `VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500`
+	- `VITE_AUDIO_JOB_TIMEOUT_MS=420000`
+- Redeploy Vercel after any env variable changes.
+
+### Backend (Hugging Face Spaces)
+
+- Use Docker SDK and deploy from `hf-space/`.
+- Docker entrypoint is `hf-space/Dockerfile` (uvicorn on port 7860).
+- Set Space secrets:
+	- `OPENAI_API_KEY`
+	- `TTS_PROVIDER=runpod`
+	- `RUNPOD_API_KEY`
+	- `RUNPOD_ENDPOINT_ID`
+	- `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
+	- `AUDIO_JOB_TIMEOUT_SEC=420`
+	- Optional: `TTS_PROMPT_MAX_TOKENS=220`
+
+Important note about this repository:
+
+- `hf-space/` is currently ignored by `.gitignore`.
+- If your HF Space deploys directly from this GitHub repo, files in `hf-space/` will not be included unless you change ignore rules or use a separate repo/source for Space files.
+
+### RunPod (TTS worker)
+
+Create a queue-based serverless endpoint with:
+
+- Dockerfile path: `/runpod-worker/Dockerfile`
+- Build context: `/runpod-worker`
+- Endpoint name: `MagicNarrate-tts`
+
+Recommended starting settings:
+
+- Min workers: `0`
+- Max workers: `1`
+- Container disk: `20-30 GB`
+
+## Deployment Verification
+
+Run the verification script:
+
+```bash
+chmod +x verify-deployment.sh
+./verify-deployment.sh https://<your-space>.hf.space https://<your-app>.vercel.app
+```
+
+Expected checks:
+
+- `GET /health` is healthy
+- `POST /generate-audio-job` returns `job_id`
+- frontend URL is reachable
+
+## API Endpoints
+
+- `GET /`: basic service information
+- `GET /health`: health check
+- `GET /speakers`: available speakers
+- `POST /generate`: generate story from image
+- `POST /generate-from-text`: generate story from text prompt
+- `POST /generate-audio`: synchronous local audio route (legacy/fallback)
+- `POST /generate-audio-job`: create async audio job
+- `GET /generate-audio-job/{job_id}`: check async audio job status
+
+## Additional Deployment Docs
+
+- `DEPLOYMENT.md`
+- `DEPLOY_QUICK_START.md`
+- `DEPLOYMENT_CHECKLIST.md`
