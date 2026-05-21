@@ -42,7 +42,12 @@ MagicNarrate is an emotion-aware AI storytelling app that converts image or text
 - `backend/`: local development backend
 - `hf-space/`: Hugging Face Space backend source
 - `runpod-worker/`: RunPod serverless worker
-- `models.txt`: model artifact source link and update metadata
+- `docs/`: documentation, audit reports, architecture, and model links
+
+**Documentation:**
+- [AUDIT.md](docs/AUDIT.md) — Project quality audit report
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
+- [DEPLOYMENT.md](DEPLOYMENT.md) — Deployment strategies
 
 ## Local Development
 
@@ -59,7 +64,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-echo "OPENAI_API_KEY=your_api_key_here" > .env
+cp .env.example .env
 python server.py
 ```
 
@@ -74,6 +79,47 @@ npm run dev
 ```
 
 Frontend runs at `http://localhost:5173`.
+
+## Backend Environment & Docker
+
+### Python Version Requirements
+
+- Python 3.10+ (tested with 3.10, 3.11, 3.12)
+- Virtual environment recommended for dependency isolation
+
+### Pinned Dependencies
+
+`backend/requirements.txt` contains pinned versions for reproducible builds:
+- PyTorch 2.10.0 (CPU or CUDA)
+- FastAPI 0.133.1
+- Transformers 4.46.1
+- Parler-TTS for text-to-speech
+
+To verify your environment:
+```bash
+cd backend
+source .venv/bin/activate
+python server.py
+# Should show: "Models loaded. Server ready."
+```
+
+### Docker Setup
+
+Two Dockerfiles are provided:
+
+**HF Spaces** (`hf-space/Dockerfile`):
+```bash
+docker build -f hf-space/Dockerfile -t magicnarrate-hf hf-space/
+docker run -e OPENAI_API_KEY=your_key -p 7860:7860 magicnarrate-hf
+```
+
+**RunPod Worker** (`runpod-worker/Dockerfile`):
+```bash
+docker build -f runpod-worker/Dockerfile -t magicnarrate-runpod runpod-worker/
+docker run -e OPENAI_API_KEY=your_key magicnarrate-runpod
+```
+
+Both use the same `requirements.txt` for consistency.
 
 ## Environment Variables
 
@@ -93,17 +139,8 @@ VITE_API_URL=https://<your-space>.hf.space
 
 ### Backend (`backend/.env` locally, HF Space Secrets in production)
 
-```env
-OPENAI_API_KEY=your_openai_api_key
-TTS_PROVIDER=local
+Copy `backend/.env.example` to `backend/.env` and set the values. Do not commit your `.env` file—it's already ignored by `.gitignore`.
 
-# Required when using RunPod
-RUNPOD_API_KEY=your_runpod_api_key
-RUNPOD_ENDPOINT_ID=your_runpod_endpoint_id
-AUDIO_JOB_POLL_INTERVAL_SEC=2.5
-AUDIO_JOB_TIMEOUT_SEC=420
-TTS_PROMPT_MAX_TOKENS=220
-```
 
 `TTS_PROVIDER` modes:
 
@@ -114,7 +151,7 @@ TTS_PROMPT_MAX_TOKENS=220
 
 Model source:
 
-- Google Drive folder (also tracked in `models.txt`): https://drive.google.com/drive/folders/1H-rOG2pVmDHQMoA9pm8ZqDS1endTIYuV?usp=sharing
+- Google Drive folder (see [docs/MODELS.md](docs/MODELS.md)): https://drive.google.com/drive/folders/1H-rOG2pVmDHQMoA9pm8ZqDS1endTIYuV?usp=sharing
 
 Runtime TTS model source:
 
@@ -144,9 +181,9 @@ Quick setup:
 
 - Uses `vercel.json` with Vite build output (`dist`).
 - Set environment variables:
-	- `VITE_API_URL=https://<your-space>.hf.space`
-	- `VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500`
-	- `VITE_AUDIO_JOB_TIMEOUT_MS=420000`
+  - `VITE_API_URL=https://<your-space>.hf.space`
+  - `VITE_AUDIO_JOB_POLL_INTERVAL_MS=2500`
+  - `VITE_AUDIO_JOB_TIMEOUT_MS=420000`
 - Redeploy Vercel after any env variable changes.
 
 ### Backend (Hugging Face Spaces)
@@ -154,13 +191,13 @@ Quick setup:
 - Use Docker SDK and deploy from `hf-space/`.
 - Docker entrypoint is `hf-space/Dockerfile` (uvicorn on port 7860).
 - Set Space secrets:
-	- `OPENAI_API_KEY`
-	- `TTS_PROVIDER=runpod`
-	- `RUNPOD_API_KEY`
-	- `RUNPOD_ENDPOINT_ID`
-	- `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
-	- `AUDIO_JOB_TIMEOUT_SEC=420`
-	- Optional: `TTS_PROMPT_MAX_TOKENS=220`
+  - `OPENAI_API_KEY`
+  - `TTS_PROVIDER=runpod`
+  - `RUNPOD_API_KEY`
+  - `RUNPOD_ENDPOINT_ID`
+  - `AUDIO_JOB_POLL_INTERVAL_SEC=2.5`
+  - `AUDIO_JOB_TIMEOUT_SEC=420`
+  - Optional: `TTS_PROMPT_MAX_TOKENS=220`
 
 Important note about this repository:
 
