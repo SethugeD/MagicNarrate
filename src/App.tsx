@@ -8,7 +8,9 @@ function App() {
 
   return (
     <main className="min-h-screen">
-      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <Suspense
+        fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}
+      >
         {currentPage === 'landing' ? (
           <LandingPage onGetStarted={() => setCurrentPage('system')} />
         ) : (

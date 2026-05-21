@@ -1,5 +1,15 @@
 import { useRef, useEffect } from 'react';
-import { Sparkles, Volume2, Play, Pause, SkipBack, SkipForward, RotateCcw, Download, Wand2 } from 'lucide-react';
+import {
+  Sparkles,
+  Volume2,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+  Download,
+  Wand2,
+} from 'lucide-react';
 
 interface StoryResultSectionProps {
   generatedStory: string;
@@ -107,7 +117,9 @@ export default function StoryResultSection({
                   <div className="inline-block">
                     <Sparkles className="w-8 h-8 text-purple-500 animate-spin" />
                   </div>
-                  <p className="text-gray-600 mt-3 font-medium">{audioStatusMessage || 'Generating audio narration...'}</p>
+                  <p className="text-gray-600 mt-3 font-medium">
+                    {audioStatusMessage || 'Generating audio narration...'}
+                  </p>
                 </div>
               </div>
             ) : hasAudio ? (
@@ -122,7 +134,9 @@ export default function StoryResultSection({
                     onChange={onSeek}
                     className="w-full h-2 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full appearance-none cursor-pointer slider"
                     style={{
-                      background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(236, 72, 153) ${progress * 100}%, rgb(243, 232, 255) ${progress * 100}%, rgb(243, 232, 255) 100%)`,
+                      background: `linear-gradient(to right, rgb(168, 85, 247) 0%, rgb(236, 72, 153) ${
+                        progress * 100
+                      }%, rgb(243, 232, 255) ${progress * 100}%, rgb(243, 232, 255) 100%)`,
                     }}
                   />
                   <div className="flex justify-between text-xs text-gray-600 mt-2">

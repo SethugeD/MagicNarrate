@@ -12,9 +12,7 @@ type InputMode = 'text' | 'image';
 // Use localhost only during local development. In production, use HF Space fallback.
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV
-    ? 'http://localhost:8000'
-    : 'https://damz25-magic-narrate.hf.space');
+  (import.meta.env.DEV ? 'http://localhost:8000' : 'https://damz25-magic-narrate.hf.space');
 
 const AUDIO_JOB_POLL_INTERVAL_MS = Number(import.meta.env.VITE_AUDIO_JOB_POLL_INTERVAL_MS || 2500);
 const AUDIO_JOB_TIMEOUT_MS = Number(import.meta.env.VITE_AUDIO_JOB_TIMEOUT_MS || 420000);
@@ -84,15 +82,15 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     setDuration(0);
     setProgress(0);
     setIsGeneratingAudio(false);
-    
+
     try {
       const formData = new FormData();
       formData.append('genre', genre);
       formData.append('tone', emotionTone);
       formData.append('speaker', selectedSpeaker);
-      
+
       let endpoint = `${API_URL}`;
-      
+
       if (inputMode === 'text') {
         endpoint += '/generate-from-text';
         formData.append('prompt', textInput);
@@ -104,25 +102,25 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           throw new Error('Please select an image');
         }
       }
-      
+
       const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to generate story');
       }
-      
+
       const data = await response.json();
       setGeneratedStory(data.story);
       setIsGenerating(false);
-      
+
       const audioFormData = new FormData();
       audioFormData.append('story', data.story);
       audioFormData.append('tone', emotionTone);
       audioFormData.append('speaker', selectedSpeaker);
-      
+
       setIsGeneratingAudio(true);
       setAudioStatusMessage('Queueing audio job...');
 
@@ -142,7 +140,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
       setAudioJobId(audioData.job_id);
       setAudioStatusMessage(audioData.progress_message || 'Queued on GPU');
-      
     } catch (error) {
       console.error('Error generating story:', error);
       alert('Failed to generate story. Make sure the backend is running.');
@@ -269,7 +266,9 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           return;
         }
         console.error('Error polling audio job:', error);
-        alert(error instanceof Error ? error.message : 'Audio generation failed. Please try again.');
+        alert(
+          error instanceof Error ? error.message : 'Audio generation failed. Please try again.',
+        );
         setAudioJobId('');
         setIsGeneratingAudio(false);
         setAudioStatusMessage('');
@@ -327,7 +326,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play()
+      audioRef.current
+        .play()
         .then(() => setIsPlaying(true))
         .catch((err) => console.error('Playback failed:', err));
     }
@@ -338,7 +338,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
     setProgress(0);
-    audioRef.current.play()
+    audioRef.current
+      .play()
       .then(() => setIsPlaying(true))
       .catch((err) => {
         setIsPlaying(false);
@@ -352,7 +353,8 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
     if (audioRef.current && duration > 0) {
       audioRef.current.currentTime = newProgress * duration;
       if (!isPlaying) {
-        audioRef.current.play()
+        audioRef.current
+          .play()
           .then(() => setIsPlaying(true))
           .catch((err) => console.error('Playback failed:', err));
       }
@@ -383,7 +385,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-100 relative overflow-hidden">
-      <audio 
+      <audio
         ref={audioRef}
         onTimeUpdate={() => {
           if (audioRef.current && duration > 0) {
@@ -400,7 +402,7 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           }
         }}
       />
-      
+
       <div className="absolute top-10 right-10 animate-float">
         <Sparkles className="w-8 h-8 text-purple-400 opacity-50" />
       </div>
@@ -581,7 +583,6 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
                     <ChevronDown className="h-4 w-4 text-purple-500" />
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -606,7 +607,13 @@ function SystemPage({ onBackToHome }: SystemPageProps) {
           </div>
 
           <div className="space-y-6">
-            <Suspense fallback={<div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 h-96 flex items-center justify-center text-gray-400">Loading...</div>}>
+            <Suspense
+              fallback={
+                <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 h-96 flex items-center justify-center text-gray-400">
+                  Loading...
+                </div>
+              }
+            >
               <StoryResultSection
                 generatedStory={generatedStory}
                 isPlaying={isPlaying}

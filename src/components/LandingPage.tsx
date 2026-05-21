@@ -39,19 +39,24 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">About</h2>
           </div>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-700 leading-relaxed text-justify">
-            MagicNarrate is an AI-powered storytelling companion that transforms your images and text into beautifully narrated stories.
-            Whether you upload a picture or describe a scene, our magical AI creates enchanting tales that you can read and listen to!
+            MagicNarrate is an AI-powered storytelling companion that transforms your images and
+            text into beautifully narrated stories. Whether you upload a picture or describe a
+            scene, our magical AI creates enchanting tales that you can read and listen to!
           </p>
         </section>
 
         <section className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 md:p-12 mb-16 animate-slide-up-delayed">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8 sm:mb-10 md:mb-12">How It Works</h2>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8 sm:mb-10 md:mb-12">
+            How It Works
+          </h2>
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
             <div className="text-center group">
               <div className="bg-gradient-to-br from-purple-200 to-purple-300 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Upload className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-purple-700" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">1. Input</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">
+                1. Input
+              </h3>
               <p className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-lg">
                 Upload an image or type your story idea
               </p>
@@ -61,7 +66,9 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               <div className="bg-gradient-to-br from-pink-200 to-pink-300 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Wand2 className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-pink-700" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">2. Generate</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">
+                2. Generate
+              </h3>
               <p className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-lg">
                 AI creates a magical story just for you
               </p>
@@ -71,7 +78,9 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               <div className="bg-gradient-to-br from-blue-200 to-blue-300 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Headphones className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-blue-700" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">3. Listen</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">
+                3. Listen
+              </h3>
               <p className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-lg">
                 Read along or listen to the narrated tale
               </p>
