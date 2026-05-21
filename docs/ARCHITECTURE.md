@@ -345,5 +345,4 @@ Located in `.github/workflows/ci.yml`:
 
 - **Frontend Docs:** [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Deployment Guide:** [DEPLOYMENT.md](../DEPLOYMENT.md)
-- **Project Audit:** [AUDIT.md](AUDIT.md)
 - **Quick Start:** [DEPLOY_QUICK_START.md](../DEPLOY_QUICK_START.md)

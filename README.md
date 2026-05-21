@@ -42,10 +42,9 @@ MagicNarrate is an emotion-aware AI storytelling app that converts image or text
 - `backend/`: local development backend
 - `hf-space/`: Hugging Face Space backend source
 - `runpod-worker/`: RunPod serverless worker
-- `docs/`: documentation, audit reports, architecture, and model links
+- `docs/`: documentation, architecture and model links
 
 **Documentation:**
-- [AUDIT.md](docs/AUDIT.md) — Project quality audit report
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Development guidelines
 - [DEPLOYMENT.md](DEPLOYMENT.md) — Deployment strategies
 
